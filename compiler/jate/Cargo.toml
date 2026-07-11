@@ -1,0 +1,8 @@
+[package]
+name = "jate"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+jate_lexer = { path="../jate_lexer" }
+jate_parser = { path="../jate_parser" }
