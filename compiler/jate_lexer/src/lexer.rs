@@ -147,7 +147,7 @@ impl<'a> Cursor<'a> {
     /// `'c'`
     fn char_lit(&mut self) -> TokenKind {
         let Some(first) = self.bump() else {
-            return TokenKind::Eof;
+            return TokenKind::Literal(LiteralKind::InvalidChar);
         };
         if first == '\\' {
             self.bump();
@@ -168,7 +168,7 @@ impl<'a> Cursor<'a> {
     /// `.` `..` `..=
     fn dot(&mut self) -> TokenKind {
         let Some(first) = self.bump() else {
-            return TokenKind::Eof;
+            return TokenKind::Dot;
         };
         if first == '.' {
             let Some(second) = self.second() else {
@@ -190,7 +190,7 @@ impl<'a> Cursor<'a> {
     /// `/` `//` `/*`
     fn slash(&mut self) -> TokenKind {
         let Some(first) = self.first() else {
-            return TokenKind::Eof;
+            return TokenKind::Slash;
         };
         match first {
             '/' => {
@@ -198,7 +198,7 @@ impl<'a> Cursor<'a> {
                 while let Some(current) = self.bump() {
                     if current == '\n' {
                         break;
-                    } 
+                    }
                 }
                 return TokenKind::LineComment;
             }
@@ -223,12 +223,33 @@ impl<'a> Cursor<'a> {
 
     /// `:` `:=` `::`
     fn colon(&mut self) -> TokenKind {
-        todo!()
+        let Some(first) = self.first() else {
+            return TokenKind::Colon;
+        };
+        match first {
+            '=' => {
+                self.bump();
+                return TokenKind::Declare;
+            }
+            ':' => {
+                self.bump();
+                return TokenKind::Path;
+            }
+            _ => TokenKind::Colon,
+        }
     }
 
     /// `=` `==`
     fn assign(&mut self) -> TokenKind {
-        todo!()
+        let Some(first) = self.first() else {
+            return TokenKind::Assign;
+        };
+        if first == '=' {
+            self.bump();
+            return TokenKind::Eq;
+        } else {
+            TokenKind::Assign
+        }
     }
 
     /// `"..."`

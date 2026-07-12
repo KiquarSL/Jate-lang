@@ -51,6 +51,8 @@ pub enum TokenKind {
     Lt,
     /// `<=`
     Le,
+    /// `==`
+    Eq,
     /// `{`
     LBrace,
     /// `}`
