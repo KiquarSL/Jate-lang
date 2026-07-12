@@ -107,13 +107,6 @@ impl<'a> Cursor<'a> {
         self.chars.clone().next()
     }
 
-    fn second(&self) -> Option<char> {
-        // next() better optimized then nth(1)
-        let mut iter = self.chars.clone();
-        iter.next();
-        iter.next()
-    }
-
     /// Skip all types whitespaces
     fn whitespace(&mut self) -> Token {
         while let Some(first) = self.first() {
