@@ -75,16 +75,16 @@ impl<'a> Cursor<'a> {
             '^' => TokenKind::Caret,
             ';' => TokenKind::Semi,
             '?' => TokenKind::Question,
-            '>' => self.gt_or_ge(),
-            '<' => self.lt_or_le(),
-            '/' => self.comment_or_slash(),
-            '!' => self.bang_or_unwrap_or_ne(),
-            '.' => self.dot_or_range(),
-            ':' => self.colon_or_declare_or_path(),
-            '=' => self.assign_or_eq(),
-            '\'' => self.character(),
+            '>' => self.gt(),
+            '<' => self.lt(),
+            '/' => self.slash(),
+            '!' => self.bang(),
+            '.' => self.dot(),
+            ':' => self.colon(),
+            '=' => self.assign(),
+            '\'' => self.char_lit(),
             '"' => self.string(),
-            'a'..='z' | 'A'..='Z' => self.prefix_or_ident(),
+            'a'..='z' | 'A'..='Z' => self.ident(),
             '0'..='9' => self.number(),
             _ => TokenKind::Invalid,
         };
@@ -99,49 +99,57 @@ impl<'a> Cursor<'a> {
     }
 
     /// `!` `!?` `!=`
-    fn bang_or_unwrap_or_ne(&mut self) -> TokenKind {
+    fn bang(&mut self) -> TokenKind {
         todo!()
     }
 
     /// `'c'`
-    fn character(&mut self) -> TokenKind {
+    fn char_lit(&mut self) -> TokenKind {
         todo!()
     }
 
     /// `.` `..` `..=
-    fn dot_or_range(&mut self) -> TokenKind {
+    fn dot(&mut self) -> TokenKind {
         todo!()
     }
 
-    fn comment_or_slash(&mut self) -> TokenKind {
+    /// `/` `//` `/*`
+    fn slash(&mut self) -> TokenKind {
         todo!()
     }
 
-    fn colon_or_declare_or_path(&mut self) -> TokenKind {
+    /// `:` `:=` `::`
+    fn colon(&mut self) -> TokenKind {
         todo!()
     }
 
-    fn assign_or_eq(&mut self) -> TokenKind {
+    /// `=` `==`
+    fn assign(&mut self) -> TokenKind {
         todo!()
     }
 
+    /// `"..."`
     fn string(&mut self) -> TokenKind {
         todo!()
     }
 
+    /// `123` `123.45`
     fn number(&mut self) -> TokenKind {
         todo!()
     }
 
-    fn prefix_or_ident(&mut self) -> TokenKind {
+    /// Identifier or keyword, e.g., `continue` or `myVar`
+    fn ident(&mut self) -> TokenKind {
         todo!()
     }
 
-    fn gt_or_ge(&mut self) -> TokenKind {
+    /// `>` `>=`
+    fn gt(&mut self) -> TokenKind {
         todo!()
     }
 
-    fn lt_or_le(&mut self) -> TokenKind {
+    /// `<` `<=`
+    fn lt(&mut self) -> TokenKind {
         todo!()
     }
 }
