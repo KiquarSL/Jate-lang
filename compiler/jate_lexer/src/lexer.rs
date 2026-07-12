@@ -189,7 +189,36 @@ impl<'a> Cursor<'a> {
 
     /// `/` `//` `/*`
     fn slash(&mut self) -> TokenKind {
-        todo!()
+        let Some(first) = self.first() else {
+            return TokenKind::Eof;
+        };
+        match first {
+            '/' => {
+                self.bump();
+                while let Some(current) = self.bump() {
+                    if current == '\n' {
+                        break;
+                    } 
+                }
+                return TokenKind::LineComment;
+            }
+            '*' => {
+                self.bump();
+                loop {
+                    let Some(first) = self.bump() else {
+                        break;
+                    };
+                    let Some(second) = self.bump() else {
+                        break;
+                    };
+                    if first == '*' && second == '/' {
+                        break;
+                    }
+                }
+                return TokenKind::BlockComment;
+            }
+            _ => TokenKind::Slash,
+        }
     }
 
     /// `:` `:=` `::`
