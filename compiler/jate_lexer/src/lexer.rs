@@ -254,7 +254,16 @@ impl<'a> Cursor<'a> {
 
     /// `"..."`
     fn string(&mut self) -> TokenKind {
-        todo!()
+        while let Some(current) = self.bump() {
+            if current == '\\' {
+                // Skip `\` and symbol after it
+                self.bump();
+                continue;
+            } else if current == '"' {
+                break;
+            }
+        }
+        return TokenKind::Literal(LiteralKind::String(StrPrefix::No));
     }
 
     /// `123` `123.45`
