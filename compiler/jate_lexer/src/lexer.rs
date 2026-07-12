@@ -62,6 +62,10 @@ impl<'a> Cursor<'a> {
             return Token::new(TokenKind::Eof, 0);
         };
 
+        if is_whitespace(first) {
+            return self.whitespace();
+        }
+
         let kind = match first {
             '+' => TokenKind::Plus,
             '-' => TokenKind::Minus,
@@ -91,6 +95,17 @@ impl<'a> Cursor<'a> {
         let token_len = self.token_len;
         self.token_len = 0;
         return Token::new(kind, token_len);
+    }
+    /// Skip all types whitespaces
+    fn whitespace(&mut self) -> Token {
+        while let Some(first) = self.bump() {
+            if !is_whitespace(first) {
+                break;
+            }
+        }
+        let token_len = self.token_len;
+        self.token_len = 0;
+        return Token::new(TokenKind::Whitespace, token_len);
     }
 
     fn bump(&mut self) -> Option<char> {
