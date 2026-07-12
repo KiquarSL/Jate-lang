@@ -97,6 +97,8 @@ pub enum LiteralKind {
     String,
     /// Char, e.g., `'\n'` `'j'`
     Char,
+    /// Char, e.g., `'\\n`` `'j`
+    InvalidChar,
 }
 
 #[derive(PartialEq, Clone, Copy)]

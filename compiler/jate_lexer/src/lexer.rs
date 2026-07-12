@@ -1,4 +1,4 @@
-use crate::{LiteralKind, StringPrefix, Token, TokenKind};
+use crate::{LiteralKind, Prefix, Token, TokenKind};
 use std::str::Chars;
 
 pub fn tokenize(input: &str) -> impl Iterator<Item = Token> {
@@ -96,6 +96,24 @@ impl<'a> Cursor<'a> {
         self.token_len = 0;
         return Token::new(kind, token_len);
     }
+
+    fn bump(&mut self) -> Option<char> {
+        self.token_len += 1;
+        self.chars.next()
+    }
+
+    fn first(&self) -> Option<char> {
+        // next() better optimized then nth(0)
+        self.chars.clone().next()
+    }
+
+    fn second(&self) -> Option<char> {
+        // next() better optimized then nth(1)
+        let mut iter = self.chars.clone();
+        iter.next();
+        iter.next()
+    }
+
     /// Skip all types whitespaces
     fn whitespace(&mut self) -> Token {
         while let Some(first) = self.bump() {
@@ -108,24 +126,65 @@ impl<'a> Cursor<'a> {
         return Token::new(TokenKind::Whitespace, token_len);
     }
 
-    fn bump(&mut self) -> Option<char> {
-        self.token_len += 1;
-        self.chars.next()
-    }
-
     /// `!` `!?` `!=`
     fn bang(&mut self) -> TokenKind {
-        todo!()
+        let Some(first) = self.first() else {
+            return TokenKind::Eof;
+        };
+        match first {
+            '?' => {
+                self.bump();
+                return TokenKind::Unwrap;
+            }
+            '=' => {
+                self.bump();
+                return TokenKind::Ne;
+            }
+            _ => TokenKind::Bang,
+        }
     }
 
     /// `'c'`
     fn char_lit(&mut self) -> TokenKind {
-        todo!()
+        let Some(first) = self.bump() else {
+            return TokenKind::Eof;
+        };
+        if first == '\\' {
+            self.bump();
+            self.bump();
+        } else {
+            self.bump();
+        }
+        if let Some(first) = self.bump() {
+            if first != '\'' {
+                return TokenKind::Literal(LiteralKind::InvalidChar);
+            }
+            return TokenKind::Literal(LiteralKind::Char);
+        } else {
+            return TokenKind::Literal(LiteralKind::InvalidChar);
+        }
     }
 
     /// `.` `..` `..=
     fn dot(&mut self) -> TokenKind {
-        todo!()
+        let Some(first) = self.bump() else {
+            return TokenKind::Eof;
+        };
+        if first == '.' {
+            let Some(second) = self.second() else {
+                return TokenKind::Range;
+            };
+            match second {
+                '=' => {
+                    self.bump();
+                    self.bump();
+                    return TokenKind::RangeInclude;
+                }
+                _ => TokenKind::Range,
+            }
+        } else {
+            return TokenKind::Dot;
+        }
     }
 
     /// `/` `//` `/*`
