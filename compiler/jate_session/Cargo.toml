@@ -1,0 +1,9 @@
+[package]
+name = "jate_session"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+
+[dependencies]
+jate_error = { path = "../jate_error" }

@@ -2,5 +2,10 @@
 resolver = "2"
 
 members = [
-    "compiler/jate"
-, "compiler/jate_ast", "compiler/jate_ast_ir"]
+    "compiler/jate", 
+    "compiler/jate_ast", 
+    "compiler/jate_ast_ir",
+    "compiler/jate_parser",
+    "compiler/jate_lexer", 
+    "compiler/jate_session", "compiler/jate_error", "compiler/jate_error_codes",
+]

@@ -16,3 +16,26 @@ dependencies = [
 [[package]]
 name = "jate_ast_ir"
 version = "0.1.0"
+
+[[package]]
+name = "jate_error"
+version = "0.1.0"
+
+[[package]]
+name = "jate_error_codes"
+version = "0.1.0"
+
+[[package]]
+name = "jate_lexer"
+version = "0.1.0"
+
+[[package]]
+name = "jate_parser"
+version = "0.1.0"
+
+[[package]]
+name = "jate_session"
+version = "0.1.0"
+dependencies = [
+ "jate_error",
+]
