@@ -71,8 +71,6 @@ pub enum TokenKind {
     RangeInclude,
     /// `^`
     Caret,
-    /// All prefix kinds, see Prefix
-    Prefix,
     /// Identifier or keyword, e.g., `continue` or `myVar`
     Ident,
     /// Invalid keyword, e.g., emoji
@@ -96,7 +94,7 @@ pub enum LiteralKind {
     /// Float number, e.g., 3.1412 5863.1
     Float,
     /// String, e.g., "Hello"
-    String,
+    String(StrPrefix),
     /// Char, e.g., `'\n'` `'j'`
     Char,
     /// Char, e.g., `'\\n`` `'j`
@@ -104,11 +102,10 @@ pub enum LiteralKind {
 }
 
 #[derive(PartialEq, Clone, Copy)]
-pub enum Prefix {
+pub enum StrPrefix {
+    No,
     /// `f` - string
     Format,
     /// `r` - string
     Raw,
-    /// `b` - string
-    Byte,
 }

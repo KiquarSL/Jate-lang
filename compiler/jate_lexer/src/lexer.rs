@@ -1,4 +1,4 @@
-use crate::{LiteralKind, Prefix, Token, TokenKind};
+use crate::{LiteralKind, StrPrefix, Token, TokenKind};
 use std::str::Chars;
 
 pub fn tokenize(input: &str) -> impl Iterator<Item = Token> {
