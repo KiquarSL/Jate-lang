@@ -116,10 +116,11 @@ impl<'a> Cursor<'a> {
 
     /// Skip all types whitespaces
     fn whitespace(&mut self) -> Token {
-        while let Some(first) = self.bump() {
+        while let Some(first) = self.first() {
             if !is_whitespace(first) {
                 break;
             }
+            self.bump();
         }
         let token_len = self.token_len;
         self.token_len = 0;
@@ -171,12 +172,11 @@ impl<'a> Cursor<'a> {
             return TokenKind::Dot;
         };
         if first == '.' {
-            let Some(second) = self.second() else {
+            let Some(second) = self.first() else {
                 return TokenKind::Range;
             };
             match second {
                 '=' => {
-                    self.bump();
                     self.bump();
                     return TokenKind::RangeInclude;
                 }
@@ -271,7 +271,7 @@ impl<'a> Cursor<'a> {
         while let Some(current) = self.bump() {
             if current == '.' {
                 has_dot = true;
-            } else if current == '"' {
+            } else if current < '0' || current > '9' {
                 break;
             }
         }
@@ -283,11 +283,23 @@ impl<'a> Cursor<'a> {
         return TokenKind::Literal(lit_kind);
     }
 
-    /// Identifier or keyword, e.g., `continue` or `myVar`
+    /// Identifier, keyword or prefix with value, e.g., `continue`, `myVar` or prefix with string `f"format string"`
     fn ident(&mut self) -> TokenKind {
         while let Some(current) = self.bump() {
             match current {
-                'a'..='z' | 'A'..='Z' | '_' => continue,
+                'a'..='z' | 'A'..='Z' | '_' => {
+                    let Some(first) = self.first() else {
+                        continue;
+                    };
+                    if current == 'f' && first == '"' {
+                        self.string(); // Skips string
+                        return TokenKind::Literal(LiteralKind::String(StrPrefix::Format));
+                    } else if current == 'r' && first == '"' {
+                        self.string(); // Skips string
+                        return TokenKind::Literal(LiteralKind::String(StrPrefix::Raw));
+                    }
+                    continue;
+                }
                 _ => break,
             }
         }

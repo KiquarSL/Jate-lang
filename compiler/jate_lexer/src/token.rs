@@ -2,6 +2,7 @@
 
 /// Parsed token.
 /// Does't have position
+#[derive(Debug, Clone, Copy)]
 pub struct Token {
     pub len: u32,
     pub kind: TokenKind,
@@ -13,7 +14,7 @@ impl Token {
     }
 }
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenKind {
     /// `+`
     Plus,
@@ -87,7 +88,7 @@ pub enum TokenKind {
     Eof,
 }
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum LiteralKind {
     /// Integer number, e.g., 1024 86
     Int,
@@ -101,7 +102,7 @@ pub enum LiteralKind {
     InvalidChar,
 }
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum StrPrefix {
     No,
     /// `f` - string
