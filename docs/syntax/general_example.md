@@ -131,7 +131,7 @@ for i in 0..=10 {
     println(f"I is {i}")
 }
 // Including value with step
-for i in 0..=10'2 {
+for i in 0..=10:2 {
     println(f"I is {i}")
 }
 ```

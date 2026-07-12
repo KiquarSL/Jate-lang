@@ -63,8 +63,22 @@ pub enum TokenKind {
     LBracket,
     /// `]`
     RBracket,
+    /// `..`
+    Range,
+    /// `..=`
+    RangeInclude,
+    /// `^`
+    Caret,
     /// Identifier or keyword, e.g., `continue` or `myVar`
     Ident,
+    /// Invalid keyword, e.g., emoji
+    Invalid,
+    /// Line comment, starts with `//`
+    LineComment,
+    /// Block comment, starts with `/*`, ends with `*/`
+    BlockComment,
+    /// All whitespace kind, e.g., `\t`, `\n`
+    Whitespace,
     /// Constant value, see LiteralKind
     Literal(LiteralKind),
     /// End of file
@@ -78,7 +92,13 @@ pub enum LiteralKind {
     /// Float number, e.g., 3.1412 5863.1
     Float,
     /// String, e.g., "Hello"
-    String,
-    /// Format string, e.g., f"Hello, {name}!"
-    FormatString,
+    String(StringPrefix),
+    /// Char, e.g., `'\n'` `'j'`
+    Char,
+}
+
+#[derive(PartialEq, Clone, Copy)]
+pub enum StringPrefix {
+    Invalid,
+    Format,
 }
