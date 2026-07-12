@@ -3,4 +3,4 @@ resolver = "2"
 
 members = [
     "compiler/jate"
-]
+, "compiler/jate_ast", "compiler/jate_ast_ir"]
