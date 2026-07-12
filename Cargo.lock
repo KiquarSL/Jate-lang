@@ -5,15 +5,14 @@ version = 4
 [[package]]
 name = "jate"
 version = "0.1.0"
+
+[[package]]
+name = "jate_ast"
+version = "0.1.0"
 dependencies = [
- "jate_lexer",
- "jate_parser",
+ "jate_ast_ir",
 ]
 
 [[package]]
-name = "jate_lexer"
-version = "0.1.0"
-
-[[package]]
-name = "jate_parser"
+name = "jate_ast_ir"
 version = "0.1.0"

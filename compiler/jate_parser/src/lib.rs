@@ -1,5 +1,5 @@
 mod parser;
 
 /* Uncomment when implemented
-pub use lexer::parse
+pub use parser::parse;
 */

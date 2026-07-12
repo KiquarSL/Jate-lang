@@ -1,8 +1,9 @@
 [package]
-name = "jate_lexer"
+name = "jate_ast"
 version = "0.1.0"
 edition = "2024"
 
 [lib]
 
 [dependencies]
+jate_ast_ir = { path = "../jate_ast_ir" }
