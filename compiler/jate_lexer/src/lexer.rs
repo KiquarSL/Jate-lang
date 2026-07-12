@@ -68,7 +68,6 @@ impl<'a> Cursor<'a> {
 
         let kind = match first {
             '+' => TokenKind::Plus,
-            '-' => TokenKind::Minus,
             '*' => TokenKind::Star,
             '(' => TokenKind::LParen,
             ')' => TokenKind::RParen,
@@ -79,6 +78,7 @@ impl<'a> Cursor<'a> {
             '^' => TokenKind::Caret,
             ';' => TokenKind::Semi,
             '?' => TokenKind::Question,
+            '-' => self.minus(),
             '>' => self.gt(),
             '<' => self.lt(),
             '/' => self.slash(),
@@ -241,7 +241,20 @@ impl<'a> Cursor<'a> {
             self.bump();
             return TokenKind::Eq;
         } else {
-            TokenKind::Assign
+            return TokenKind::Assign;
+        }
+    }
+
+    /// `-` `->`
+    fn minus(&mut self) -> TokenKind {
+        let Some(first) = self.first() else {
+            return TokenKind::Minus;
+        };
+        if first == '>' {
+            self.bump();
+            return TokenKind::Arrow;
+        } else {
+            return TokenKind::Minus;
         }
     }
 

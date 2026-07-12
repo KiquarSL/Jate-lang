@@ -24,6 +24,8 @@ pub enum TokenKind {
     Slash,
     /// `*`
     Star,
+    /// `->`
+    Arrow,
     /// `.`
     Dot,
     /// `:`
