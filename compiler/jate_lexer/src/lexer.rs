@@ -258,7 +258,6 @@ impl<'a> Cursor<'a> {
             if current == '\\' {
                 // Skip `\` and symbol after it
                 self.bump();
-                continue;
             } else if current == '"' {
                 break;
             }
@@ -268,21 +267,58 @@ impl<'a> Cursor<'a> {
 
     /// `123` `123.45`
     fn number(&mut self) -> TokenKind {
-        todo!()
+        let mut has_dot = false;
+        while let Some(current) = self.bump() {
+            if current == '.' {
+                has_dot = true;
+            } else if current == '"' {
+                break;
+            }
+        }
+        let lit_kind = if has_dot {
+            LiteralKind::Float
+        } else {
+            LiteralKind::Int
+        };
+        return TokenKind::Literal(lit_kind);
     }
 
     /// Identifier or keyword, e.g., `continue` or `myVar`
     fn ident(&mut self) -> TokenKind {
-        todo!()
+        while let Some(current) = self.bump() {
+            match current {
+                'a'..='z' | 'A'..='Z' | '_' => continue,
+                _ => break,
+            }
+        }
+        return TokenKind::Ident;
     }
 
     /// `>` `>=`
     fn gt(&mut self) -> TokenKind {
-        todo!()
+        let Some(first) = self.first() else {
+            return TokenKind::Colon;
+        };
+        match first {
+            '=' => {
+                self.bump();
+                return TokenKind::Ge;
+            }
+            _ => TokenKind::Le,
+        }
     }
 
     /// `<` `<=`
     fn lt(&mut self) -> TokenKind {
-        todo!()
+        let Some(first) = self.first() else {
+            return TokenKind::Colon;
+        };
+        match first {
+            '=' => {
+                self.bump();
+                return TokenKind::Le;
+            }
+            _ => TokenKind::Lt,
+        }
     }
 }
