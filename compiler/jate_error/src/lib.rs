@@ -1,10 +1,11 @@
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum SpanKind {
     /// `+++`
     Add,
     /// `---`
     Remove,
     /// `^^^`
+    #[default]
     Point,
 }
 
@@ -27,4 +28,79 @@ pub struct Diagnostic {
     pub err_code: String,
     pub span: Span,
     pub helps: Vec<Help>,
+}
+
+/** Macros for fast make diagnostic
+
+# Arguments
+
+1. Message, error code, span, helps
+2. Message, error code, span
+
+# Example
+
+```
+use jate_error::{diag, span};
+
+let diagnostic = diag!(
+    "Undefined variable",
+    "E0001",
+    span!(10, 3, SpanKind::Point)
+);
+```
+*/
+#[macro_export]
+macro_rules! diag {
+    ($msg: expr, $err_code: expr, $span: expr, $helps: expr) => {
+        Diagnostic {
+            message: $msg,
+            err_code: $err_code,
+            span: $span,
+            helps: $helps,
+        }
+    };
+    ($msg: expr, $err_code: expr, $span: expr) => {
+        diag!($msg, $err_code, $span)
+    };
+}
+
+/** Macros for fast make span
+
+# Arguments
+
+1. Position, length, span kind
+2. Position, length (Using default kind)
+*/
+#[macro_export]
+macro_rules! span {
+    ($start:expr, $len:expr, $kind:expr) => {
+        Span {
+            start: $start,
+            len: $len,
+            kind: $kind,
+        }
+    };
+    ($start:expr, $len:expr) => {
+        span!(
+            start: $start,
+            len: $len,
+            kind: SpanKind::default(),
+        )
+    };
+}
+
+/** Macros for fast make help
+
+# Arguments
+
+Message, span
+*/
+#[macro_export]
+macro_rules! help {
+    ($msg:expr, $span:expr) => {
+        Help {
+            msg: $msg,
+            span: $span,
+        }
+    };
 }
