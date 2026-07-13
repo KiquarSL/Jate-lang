@@ -1,10 +1,10 @@
 use crate::{TokenItem, TokenStream};
 use jate_ast::{Expr, Stmt};
-use jate_error::Diagnostic;
+use jate_error::{Diagnostic, diag, span};
 
 /// Result wrapper for get statement when successful parse and return vector of diagnostics when errors
 pub type StmtItem = Result<Stmt, Vec<Diagnostic>>;
-pub type ExprItem = Result<Expr, Vec<Diagnostic>>;
+pub type ExprItem = Result<Expr, Diagnostic>;
 
 pub fn parse(
     stream: TokenStream<impl Iterator<Item = TokenItem>>,
@@ -19,7 +19,7 @@ pub struct TokenCursor<I, 'a> {
     source: &'a str,
 }
 
-impl<I> TokenCursor<I> {
+impl<I> TokenCursor<'_, I> {
     pub fn advance_stmt(&self) -> Option<StmtItem> {
         todo!()
     }
@@ -39,20 +39,30 @@ impl<I> TokenCursor<I> {
     fn comparison(&mut self) -> ExprItem {
         todo!()
     }
-    
+
     fn additive(&mut self) -> ExprItem {
         todo!()
     }
-    
+
     fn multiplicative(&mut self) -> ExprItem {
         todo!()
     }
-    
+
     fn unary(&mut self) -> ExprItem {
         todo!()
     }
-    
+
     fn primary(&mut self) -> ExprItem {
-        todo!()
+        match self.stream.advance() {
+            Some(Ok(token)) => {
+                todo!()
+            }
+            Some(Err(err)) => Err(err),
+            None => Err(diag!(
+                "Value for expression not found",
+                "E0006",
+                span!(self.stream.pos, 1)
+            )),
+        }
     }
 }

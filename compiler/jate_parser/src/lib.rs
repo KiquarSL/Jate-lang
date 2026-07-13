@@ -4,4 +4,4 @@ mod keyword;
 
 pub use parser::{StmtItem, parse};
 pub use token_stream::{TokenItem, TokenStream};
-pub use keyword::
+pub use keyword::Keyword;
