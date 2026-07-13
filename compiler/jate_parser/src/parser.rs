@@ -2,6 +2,7 @@ use crate::{TokenItem, TokenStream};
 use jate_ast::Stmt;
 use jate_error::Diagnostic;
 
+/// Result wrapper for get statement when successful parse and return vector of diagnostics when errors
 pub type StmtItem = Result<Stmt, Vec<Diagnostic>>;
 
 pub fn parse(

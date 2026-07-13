@@ -6,6 +6,8 @@ use jate_lexer::{LiteralKind, Token, TokenKind};
 /// Result wrapper for get token or diagnostic
 pub type TokenItem = Option<Result<Token, Diagnostic>>;
 
+/// TokenStream is wrapper for token iterator from crate `jate_lexer`
+/// Can be using for parse tokens with get errors
 pub struct TokenStream<I> {
     stream: I,
     pub pos: u32,
@@ -19,7 +21,7 @@ where
         Self { stream, pos: 0 }
     }
 
-    /// Lazy get token item
+    /// Lazy get token item or error if invalid token
     pub fn next(&mut self) -> TokenItem {
         if let Some(token) = self.stream.next() {
             let result = Some(self.check(token));

@@ -2,6 +2,8 @@
 
 use crate::Ident;
 
+/// Expr is node of AST
+/// Using as source values
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     Int(i64),

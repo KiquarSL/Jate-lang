@@ -1,6 +1,7 @@
 use crate::{LiteralKind, StrPrefix, Token, TokenKind};
 use std::str::Chars;
 
+/// Return iterator of tokens from input
 pub fn tokenize(input: &str) -> impl Iterator<Item = Token> {
     let mut cursor = Cursor::new(input);
     return std::iter::from_fn(move || {
@@ -43,6 +44,7 @@ pub fn is_whitespace(c: char) -> bool {
     )
 }
 
+/// Using for build tokens from input
 pub struct Cursor<'a> {
     chars: Chars<'a>,
     /// Current token length

@@ -12,12 +12,17 @@ pub enum IdentNode {
 }
 
 /// Class ident
-/// In future add generics
+/// Using for class names and traits
+/// In future add generics, etc.
 #[derive(Debug, Clone)]
 pub struct ClassIdent {
     ident: Ident,
 }
 
+/// JVM class type
+/// `No`       - Final class
+/// `Open`     - Extendable class
+/// `Abstract` - Abstract class
 #[derive(Debug, Clone, Copy, Default)]
 pub enum ClassType {
     #[default]
@@ -26,6 +31,12 @@ pub enum ClassType {
     Abstract,
 }
 
+/// JVM class field
+/// `publicity` - is public class (Visibility in other packages)
+/// `staticity` - is static field
+/// `ident`     - identifier of field
+/// `ty`        - type of field
+/// `value`.    - value of field
 #[derive(Debug, Clone)]
 pub struct ClassField {
     publicity: bool,
@@ -35,6 +46,8 @@ pub struct ClassField {
     value: Option<Expr>,
 }
 
+/// Function base keep general fields for functions and methods
+/// Using in ClassMethod and Stmt::Function
 #[derive(Debug, Clone)]
 pub struct FunctionBase {
     publicity: bool,
@@ -42,6 +55,7 @@ pub struct FunctionBase {
     ret_ty: Option<Type>,
 }
 
+/// Class method is wrapper of `FunctionBase` with fields `staticity` and `body`
 #[derive(Debug, Clone)]
 pub struct ClassMethod {
     staticity: bool,
@@ -49,12 +63,15 @@ pub struct ClassMethod {
     body: Block,
 }
 
+/// Trait method is wrapper of `FunctionBase` with `staticity` and optional `body` (default implementation)
 #[derive(Debug, Clone)]
 pub struct TraitMethod {
     staticity: bool,
     base: FunctionBase,
+    body: Option<Block>,
 }
 
+/// Stmt is node of AST
 #[derive(Debug, Clone)]
 pub enum Stmt {
     Declare {

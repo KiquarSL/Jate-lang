@@ -8,9 +8,12 @@ pub enum PrimitiveType {
     Double,
 }
 
+/// All variants of types
 #[derive(Debug, Clone)]
 pub enum Type {
     Unknown,
+    /// Using for functions/methods with no return value
+    /// Not using as type in syntax
     Void,
     Class(String),
     Trait(String),

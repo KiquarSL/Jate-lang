@@ -14,6 +14,7 @@ impl Token {
     }
 }
 
+/// Raw token kinds
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenKind {
     /// `+`
@@ -90,6 +91,7 @@ pub enum TokenKind {
     Eof,
 }
 
+/// Value types using as literal
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum LiteralKind {
     /// Integer number, e.g., 1024 86
