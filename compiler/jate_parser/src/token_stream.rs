@@ -37,9 +37,25 @@ where
     /// Return Diagnostic if failure
     fn check(&self, token: Token) -> Result<Token, Diagnostic> {
         match token.kind {
+            TokenKind::Literal(LiteralKind::UnterminatedChar) => Err(diag!(
+                "Unterminated char",
+                "E0001",
+                span!(self.pos, token.len)
+            )),
             TokenKind::Literal(LiteralKind::InvalidChar) => Err(diag!(
                 "Invalid char literal",
-                "E0001",
+                "E0002",
+                span!(self.pos, token.len)
+            )),
+            TokenKind::Literal(LiteralKind::UnterminatedString) => Err(diag!(
+                "Unterminated string",
+                "E0003",
+                span!(self.pos, token.len)
+            )),
+            TokenKind::Invalid => Err(diag!("Invalid symbol", "E0004", span!(self.pos, token.len))),
+            TokenKind::Literal(LiteralKind::InvalidFloat) => Err(diag!(
+                "Invalid float literal",
+                "E0005",
                 span!(self.pos, token.len)
             )),
             _ => Ok(token),
@@ -47,6 +63,7 @@ where
     }
 
     /// Eat all tokens while not found `kind`
+    /// Using for skip tokens
     pub fn eat(&mut self, kind: TokenKind) -> Vec<Diagnostic> {
         let mut diags = vec![];
         while let Some(token) = self.next() {

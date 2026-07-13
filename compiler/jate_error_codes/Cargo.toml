@@ -3,4 +3,6 @@ name = "jate_error_codes"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+
 [dependencies]

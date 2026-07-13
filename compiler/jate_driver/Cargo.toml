@@ -3,5 +3,7 @@ name = "jate_driver"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+
 [dependencies]
 clap = { workspace = true, features = ["derive"] }

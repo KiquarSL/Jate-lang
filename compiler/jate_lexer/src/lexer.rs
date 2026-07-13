@@ -153,7 +153,7 @@ impl<'a> Cursor<'a> {
         }
         if let Some(first) = self.bump() {
             if first != '\'' {
-                return TokenKind::Literal(LiteralKind::InvalidChar);
+                return TokenKind::Literal(LiteralKind::UnterminatedChar);
             }
             return TokenKind::Literal(LiteralKind::Char);
         } else {
@@ -262,29 +262,45 @@ impl<'a> Cursor<'a> {
 
     /// `"..."`
     fn string(&mut self) -> TokenKind {
+        let mut found_close = false;
         while let Some(current) = self.bump() {
             if current == '\\' {
                 // Skip `\` and symbol after it
                 self.bump();
             } else if current == '"' {
+                found_close = true;
                 break;
             }
         }
-        return TokenKind::Literal(LiteralKind::String(StrPrefix::No));
+        let literal_kind = if found_close {
+            LiteralKind::String(StrPrefix::No)
+        } else {
+            LiteralKind::UnterminatedString
+        };
+        return TokenKind::Literal(literal_kind);
     }
 
     /// `123` `123.45`
     fn number(&mut self) -> TokenKind {
         let mut has_dot = false;
+        let mut is_invalid = true;
         while let Some(current) = self.bump() {
             if current == '.' {
-                has_dot = true;
+                if has_dot {
+                    is_invalid = true;
+                } else {
+                    has_dot = true;
+                }
             } else if current < '0' || current > '9' {
                 break;
             }
         }
         let lit_kind = if has_dot {
-            LiteralKind::Float
+            if is_invalid {
+                LiteralKind::InvalidFloat
+            } else {
+                LiteralKind::Float
+            }
         } else {
             LiteralKind::Int
         };

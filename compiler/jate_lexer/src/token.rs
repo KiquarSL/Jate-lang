@@ -98,12 +98,18 @@ pub enum LiteralKind {
     Int,
     /// Float number, e.g., 3.1412 5863.1
     Float,
+    /// Invalid float number, e.g., 3.141.7.3
+    InvalidFloat,
     /// String, e.g., "Hello"
     String(StrPrefix),
     /// Char, e.g., `'\n'` `'j'`
     Char,
-    /// Char, e.g., `'\\n`` `'j`
+    /// Char, e.g., `'\\n'`
     InvalidChar,
+    /// Char, e.g., `'j`
+    UnterminatedChar,
+    /// Char, e.g., `"string`
+    UnterminatedString,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
