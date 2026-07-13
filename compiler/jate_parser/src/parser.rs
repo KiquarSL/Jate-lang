@@ -1,4 +1,4 @@
-use crate::{TokenItem, TokenStream};
+use crate::TokenStream;
 use jate_ast::{Expr, Stmt};
 use jate_error::{Diagnostic, diag, span};
 
@@ -6,25 +6,22 @@ use jate_error::{Diagnostic, diag, span};
 pub type StmtItem = Result<Stmt, Vec<Diagnostic>>;
 pub type ExprItem = Result<Expr, Diagnostic>;
 
-pub fn parse(
-    stream: TokenStream<impl Iterator<Item = TokenItem>>,
-    source: &str,
-) -> impl Iterator<Item = StmtItem> {
-    let cursor = TokenCursor { stream, source };
+pub fn parse(stream: TokenStream, source: &str) -> impl Iterator<Item = StmtItem> {
+    let mut cursor = TokenCursor { stream, source };
     return std::iter::from_fn(move || cursor.advance_stmt());
 }
 
-pub struct TokenCursor<I, 'a> {
-    stream: TokenStream<I>,
+pub struct TokenCursor<'a> {
+    stream: TokenStream,
     source: &'a str,
 }
 
-impl<I> TokenCursor<'_, I> {
-    pub fn advance_stmt(&self) -> Option<StmtItem> {
+impl<'a> TokenCursor<'a> {
+    pub fn advance_stmt(&mut self) -> Option<StmtItem> {
         todo!()
     }
 
-    pub(crate) fn advance_expr(&self) -> Option<Expr> {
+    pub(crate) fn advance_expr(&mut self) -> Option<Expr> {
         todo!()
     }
 
