@@ -40,7 +40,7 @@ pub struct Diagnostic {
 # Example
 
 ```
-use jate_error::{diag, span};
+use jate_error::{diag, span, SpanKind, Diagnostic};
 
 let diagnostic = diag!(
     "Undefined variable",
@@ -95,7 +95,7 @@ Message, span
 macro_rules! help {
     ($msg:expr, $span:expr) => {
         Help {
-            msg: $msg,
+            message: $msg,
             span: $span,
         }
     };
