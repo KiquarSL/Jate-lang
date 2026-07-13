@@ -5,6 +5,7 @@ mod stmt;
 
 pub type Ident = String;
 pub type Block = Vec<stmt::Stmt>;
+
 #[derive(Debug, Clone)]
 pub struct Argument {
     ident: String,

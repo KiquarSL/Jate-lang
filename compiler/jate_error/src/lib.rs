@@ -51,16 +51,16 @@ let diagnostic = diag!(
 */
 #[macro_export]
 macro_rules! diag {
-    ($msg: expr, $err_code: expr, $span: expr, $helps: expr) => {
+    ($err_code: expr, $span: expr, $helps: expr, $($arg:tt)*) => {
         Diagnostic {
-            message: $msg.into(),
+            message: format!($($arg)*),
             err_code: $err_code.into(),
             span: $span,
             helps: $helps,
         }
     };
-    ($msg: expr, $err_code: expr, $span: expr) => {
-        diag!($msg, $err_code, $span, vec![])
+    ($err_code: expr, $span: expr, $($arg:tt)*) => {
+        diag!($err_code, $span, vec![], $($arg)*)
     };
 }
 
@@ -93,9 +93,9 @@ Message, span
 */
 #[macro_export]
 macro_rules! help {
-    ($msg:expr, $span:expr) => {
+    ($span: expr, $($arg:tt)*) => {
         Help {
-            message: $msg,
+            message: format!($($arg)*),
             span: $span,
         }
     };

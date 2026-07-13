@@ -5,6 +5,7 @@ use crate::Ident;
 use jate_error::Span;
 
 /// Create expression and make `boxed kind`
+/// Arguments: ExprKind, Span
 #[macro_export]
 macro_rules! expr {
     ($kind:expr, $span:expr) => {
@@ -18,8 +19,8 @@ macro_rules! expr {
 /// Expr is node of AST
 #[derive(Debug, Clone, PartialEq)]
 pub struct Expr {
-    kind: Box<ExprKind>,
-    span: Span,
+    pub kind: Box<ExprKind>,
+    pub span: Span,
 }
 
 /// Kind od expression

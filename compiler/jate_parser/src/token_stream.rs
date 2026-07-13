@@ -1,4 +1,4 @@
-use jate_error::{diag, span, Diagnostic};
+use jate_error::{Diagnostic, diag, span};
 use jate_lexer::{LiteralKind, Token, TokenKind};
 
 /// Type of token
@@ -29,31 +29,37 @@ impl TokenStream {
         }
     }
 
+    /// Using in parser for eval positon of current token
+    /// Using after advance!
+    pub fn current_pos(&self, len: u32) -> u32 {
+        self.pos - len
+    }
+
     /// Check token
     /// Return token if success
     /// Return Diagnostic if failure
     fn check(&self, token: Token) -> Result<Token, Diagnostic> {
         match token.kind {
             TokenKind::Literal(LiteralKind::UnterminatedChar) => Err(diag!(
-                "Unterminated char",
                 "E0001",
-                span!(self.pos, token.len)
+                span!(self.pos, token.len),
+                "Unterminated char"
             )),
             TokenKind::Literal(LiteralKind::InvalidChar) => Err(diag!(
-                "Invalid char literal",
                 "E0002",
-                span!(self.pos, token.len)
+                span!(self.pos, token.len),
+                "Invalid char literal"
             )),
             TokenKind::Literal(LiteralKind::UnterminatedString) => Err(diag!(
-                "Unterminated string",
                 "E0003",
-                span!(self.pos, token.len)
+                span!(self.pos, token.len),
+                "Unterminated string"
             )),
-            TokenKind::Invalid => Err(diag!("Invalid symbol", "E0004", span!(self.pos, token.len))),
+            TokenKind::Invalid => Err(diag!("E0004", span!(self.pos, token.len), "Invalid symbol")),
             TokenKind::Literal(LiteralKind::InvalidFloat) => Err(diag!(
-                "Invalid float literal",
                 "E0005",
-                span!(self.pos, token.len)
+                span!(self.pos, token.len),
+                "Invalid float literal"
             )),
             _ => Ok(token),
         }

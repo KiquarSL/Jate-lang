@@ -35,4 +35,9 @@ impl SourceFile {
         let end = src_line.find('\n').unwrap_or(src_line.len() - 1);
         return src_line[..end].to_string();
     }
+
+    /// Get clone of word from source text
+    pub fn get_word(&self, pos: u32, len: u32) -> String {
+        self.src[pos as usize..len as usize].to_string()
+    }
 }

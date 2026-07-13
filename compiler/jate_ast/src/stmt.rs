@@ -5,10 +5,12 @@ use crate::{Argument, Block, Ident};
 use jate_ast_ir::Type;
 use jate_error::Span;
 
+/// Create expression and make `boxed kind`
+/// Arguments: StmtKind, Span
 #[macro_export]
 macro_rules! stmt {
     ($kind:expr, $span:expr) => {
-        Stmt {
+        stmt::Stmt {
             kind: $kind,
             span: $span,
         }
@@ -18,8 +20,8 @@ macro_rules! stmt {
 /// Stmt is node of AST
 #[derive(Debug, Clone)]
 pub struct Stmt {
-    kind: StmtKind,
-    span: Span,
+    pub kind: StmtKind,
+    pub span: Span,
 }
 
 /// Kind of statement
