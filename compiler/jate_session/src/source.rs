@@ -38,6 +38,6 @@ impl SourceFile {
 
     /// Get clone of word from source text
     pub fn get_word(&self, pos: u32, len: u32) -> String {
-        self.src[pos as usize..len as usize].to_string()
+        self.src[pos as usize..pos as usize + len as usize].to_string()
     }
 }

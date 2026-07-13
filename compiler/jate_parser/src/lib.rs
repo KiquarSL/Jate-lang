@@ -1,7 +1,11 @@
-mod parser;
-mod token_stream;
 mod keyword;
+mod parser;
+mod tests;
+mod token_stream;
 
+pub use keyword::Keyword;
 pub use parser::{StmtItem, parse};
 pub use token_stream::{TokenItem, TokenStream};
-pub use keyword::Keyword;
+
+pub(crate) use parser::TokenCursor;
+pub(crate) use parser::word_to_string;

@@ -1,7 +1,7 @@
 use crate::TokenStream;
 use jate_ast::{Expr, ExprKind, Stmt, StmtKind, expr, stmt};
 use jate_error::{Diagnostic, diag, span};
-use jate_lexer::{LiteralKind, Token, TokenKind};
+use jate_lexer::{LiteralKind, StrPrefix, Token, TokenKind};
 use jate_session::SourceFile;
 
 /// Result wrapper for get statement when successful parse and return vector of diagnostics when errors
@@ -13,9 +13,9 @@ pub fn parse(stream: TokenStream, source: &SourceFile) -> impl Iterator<Item = S
     return std::iter::from_fn(move || cursor.advance_stmt());
 }
 
-pub struct TokenCursor<'a> {
-    stream: TokenStream,
-    source: &'a SourceFile,
+pub(crate) struct TokenCursor<'a> {
+    pub stream: TokenStream,
+    pub source: &'a SourceFile,
 }
 
 impl<'a> TokenCursor<'a> {
@@ -52,7 +52,7 @@ impl<'a> TokenCursor<'a> {
     }
 
     /// Parse value or error
-    fn primary(&mut self) -> ExprItem {
+    pub(crate) fn primary(&mut self) -> ExprItem {
         match self.stream.first() {
             Some(Ok(token)) => {
                 let pos = self.stream.current_pos(token.len);
@@ -69,6 +69,10 @@ impl<'a> TokenCursor<'a> {
                     TokenKind::Literal(LiteralKind::Char) => {
                         self.stream.advance();
                         word_to_char(&s, token, pos)
+                    }
+                    TokenKind::Literal(LiteralKind::String(prefix)) => {
+                        self.stream.advance();
+                        Ok(word_to_string(&s, token, pos, prefix))
                     }
                     TokenKind::Ident => {
                         let span = span!(pos, token.len);
@@ -150,4 +154,13 @@ fn word_to_char(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
             "Failed to get char from source: {err}"
         )),
     }
+}
+
+pub(crate) fn word_to_string(s: &str, token: Token, pos: u32, pref: StrPrefix) -> Expr {
+    let start = match pref {
+        StrPrefix::Format | StrPrefix::Raw => 2,
+        StrPrefix::No => 1,
+    };
+    let s = &s[start..token.len as usize - 1];
+    expr!(ExprKind::String(s.into()), span!(pos, token.len))
 }
