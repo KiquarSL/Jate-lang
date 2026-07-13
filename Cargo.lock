@@ -115,6 +115,7 @@ name = "jate_ast"
 version = "0.1.0"
 dependencies = [
  "jate_ast_ir",
+ "jate_error",
 ]
 
 [[package]]

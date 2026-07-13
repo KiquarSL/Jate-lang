@@ -1,6 +1,7 @@
 use crate::TokenStream;
-use jate_ast::{Expr, Stmt};
+use jate_ast::{Expr, Stmt, StmtKind, ExprKind, expr, stmt};
 use jate_error::{Diagnostic, diag, span};
+use jate_lexer::{LiteralKind, TokenKind};
 
 /// Result wrapper for get statement when successful parse and return vector of diagnostics when errors
 pub type StmtItem = Result<Stmt, Vec<Diagnostic>>;
@@ -51,9 +52,9 @@ impl<'a> TokenCursor<'a> {
 
     fn primary(&mut self) -> ExprItem {
         match self.stream.advance() {
-            Some(Ok(token)) => {
-                todo!()
-            }
+            Some(Ok(token)) => match token.kind {
+                _ => todo!(),
+            },
             Some(Err(err)) => Err(err),
             None => Err(diag!(
                 "Value for expression not found",

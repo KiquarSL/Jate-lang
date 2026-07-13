@@ -1,4 +1,4 @@
-use jate_error::{Diagnostic, diag, span};
+use jate_error::{diag, span, Diagnostic};
 use jate_lexer::{LiteralKind, Token, TokenKind};
 
 /// Type of token
