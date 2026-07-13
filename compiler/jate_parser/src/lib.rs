@@ -1,5 +1,5 @@
 mod parser;
+mod token_stream;
 
-/* Uncomment when implemented
-pub use parser::parse;
-*/
+pub use parser::{StmtItem, parse};
+pub use token_stream::{TokenItem, TokenStream};

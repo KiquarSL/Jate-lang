@@ -53,14 +53,14 @@ let diagnostic = diag!(
 macro_rules! diag {
     ($msg: expr, $err_code: expr, $span: expr, $helps: expr) => {
         Diagnostic {
-            message: $msg,
-            err_code: $err_code,
+            message: $msg.into(),
+            err_code: $err_code.into(),
             span: $span,
             helps: $helps,
         }
     };
     ($msg: expr, $err_code: expr, $span: expr) => {
-        diag!($msg, $err_code, $span)
+        diag!($msg, $err_code, $span, vec![])
     };
 }
 
@@ -74,18 +74,14 @@ macro_rules! diag {
 #[macro_export]
 macro_rules! span {
     ($start:expr, $len:expr, $kind:expr) => {
-        Span {
+        jate_error::Span {
             start: $start,
             len: $len,
             kind: $kind,
         }
     };
     ($start:expr, $len:expr) => {
-        span!(
-            start: $start,
-            len: $len,
-            kind: SpanKind::default(),
-        )
+        span!($start, $len, jate_error::SpanKind::default())
     };
 }
 

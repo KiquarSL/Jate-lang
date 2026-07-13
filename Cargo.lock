@@ -111,10 +111,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a6cb138bb79a146c1bd460005623e142ef0181e3d0219cb493e02f7d08a35695"
 
 [[package]]
-name = "jate"
-version = "0.1.0"
-
-[[package]]
 name = "jate_ast"
 version = "0.1.0"
 dependencies = [
@@ -145,8 +141,21 @@ name = "jate_lexer"
 version = "0.1.0"
 
 [[package]]
+name = "jate_main"
+version = "0.1.0"
+dependencies = [
+ "jate_driver",
+]
+
+[[package]]
 name = "jate_parser"
 version = "0.1.0"
+dependencies = [
+ "jate_ast",
+ "jate_error",
+ "jate_lexer",
+ "jate_session",
+]
 
 [[package]]
 name = "jate_session"

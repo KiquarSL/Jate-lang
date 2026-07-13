@@ -6,3 +6,7 @@ edition = "2024"
 [lib]
 
 [dependencies]
+jate_lexer = { path = "../jate_lexer" }
+jate_session = { path = "../jate_session" }
+jate_ast = { path = "../jate_ast" }
+jate_error = { path = "../jate_error" }
