@@ -10,22 +10,37 @@ pub type TokenItem = Option<Result<Token, Diagnostic>>;
 /// Can be using for parse tokens with get errors
 pub struct TokenStream {
     stream: Box<dyn Iterator<Item = Token>>,
+    next_token: Option<TokenItem>,
     pub pos: u32,
 }
 
 impl TokenStream {
     pub fn new(stream: Box<dyn Iterator<Item = Token>>) -> Self {
-        Self { stream, pos: 0 }
+        let mut s = Self {
+            stream,
+            pos: 0,
+            next_token: None,
+        };
+        s.advance();
+        return s;
     }
 
     /// Lazy get token item or error if invalid token
     pub fn advance(&mut self) -> TokenItem {
+        let current = self.first();
         if let Some(token) = self.stream.next() {
-            let result = Some(self.check(token));
+            self.next_token = Some(Some(self.check(token)));
             self.pos += token.len;
-            return result;
+            return current;
         } else {
             None
+        }
+    }
+
+    pub fn first(&mut self) -> TokenItem {
+        match &self.next_token {
+            Some(item) => item.clone(),
+            None => None,
         }
     }
 

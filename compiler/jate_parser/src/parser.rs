@@ -1,5 +1,5 @@
 use crate::TokenStream;
-use jate_ast::{Expr, ExprKind, Stmt, StmtKind, expr, stmt};
+use jate_ast::{Expr, ExprKind, Stmt, StmtKind, expr, nd, stmt};
 use jate_error::{Diagnostic, diag, span};
 use jate_lexer::{LiteralKind, Token, TokenKind};
 use jate_session::SourceFile;
@@ -53,13 +53,32 @@ impl<'a> TokenCursor<'a> {
 
     /// Parse value or error
     fn primary(&mut self) -> ExprItem {
-        match self.stream.advance() {
+        match self.stream.first() {
             Some(Ok(token)) => {
                 let pos = self.stream.current_pos(token.len);
                 let s = self.source.get_word(pos, token.len);
                 match token.kind {
-                    TokenKind::Literal(LiteralKind::Int) => word_to_int(&s, &token, pos),
-                    TokenKind::Literal(LiteralKind::Float) => word_to_float(&s, &token, pos),
+                    TokenKind::Literal(LiteralKind::Int) => {
+                        self.stream.advance();
+                        word_to_int(&s, token, pos)
+                    }
+                    TokenKind::Literal(LiteralKind::Float) => {
+                        self.stream.advance();
+                        word_to_float(&s, token, pos)
+                    }
+                    TokenKind::Literal(LiteralKind::Char) => {
+                        self.stream.advance();
+                        word_to_char(&s, token, pos)
+                    }
+                    TokenKind::Ident => {
+                        let span = span!(pos, token.len);
+                        Ok(match s.as_str() {
+                            "true" => expr!(ExprKind::Bool(true), span),
+                            "false" => expr!(ExprKind::Bool(false), span),
+                            "null" => expr!(ExprKind::Null, span),
+                            _ => self.parse_ident(pos)?,
+                        })
+                    }
                     _ => todo!(),
                 }
             }
@@ -71,9 +90,35 @@ impl<'a> TokenCursor<'a> {
             )),
         }
     }
+
+    /// Parse ident as vector of segments, e.g., `path::to::some`
+    // TODO: add handle for calls
+    pub(crate) fn parse_ident(&mut self, pos: u32) -> Result<Expr, Diagnostic> {
+        let mut path = vec![];
+        while let Some(token_result) = self.stream.first() {
+            match token_result {
+                Ok(token) => {
+                    if token.kind == TokenKind::Path {
+                        self.stream.advance();
+                    } else if token.kind == TokenKind::Ident {
+                        let ident = self.source.get_word(pos, token.len).to_string();
+                        path.push(ident);
+                        self.stream.advance();
+                    } else {
+                        break;
+                    }
+                }
+                Err(err) => return Err(err),
+            }
+        }
+        Ok(expr!(
+            ExprKind::Ident(path),
+            span!(self.stream.pos, self.stream.pos - pos)
+        ))
+    }
 }
 
-fn word_to_int(s: &str, token: &Token, pos: u32) -> Result<Expr, Diagnostic> {
+fn word_to_int(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
     match s.parse::<i64>() {
         Ok(num) => Ok(expr!(ExprKind::Int(num), span!(pos, token.len))),
         Err(err) => Err(diag!(
@@ -84,13 +129,25 @@ fn word_to_int(s: &str, token: &Token, pos: u32) -> Result<Expr, Diagnostic> {
     }
 }
 
-fn word_to_float(s: &str, token: &Token, pos: u32) -> Result<Expr, Diagnostic> {
+fn word_to_float(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
     match s.parse::<f64>() {
         Ok(num) => Ok(expr!(ExprKind::Float(num), span!(pos, token.len))),
         Err(err) => Err(diag!(
-            "E0007",
+            "E0008",
             span!(pos, token.len),
-            "Failed to get int from source: {err}"
+            "Failed to get float from source: {err}"
+        )),
+    }
+}
+
+fn word_to_char(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
+    let c = &s[1..token.len as usize - 1];
+    match c.parse::<char>() {
+        Ok(c) => Ok(expr!(ExprKind::Char(c), span!(pos, token.len))),
+        Err(err) => Err(diag!(
+            "E0009",
+            span!(pos, token.len),
+            "Failed to get char from source: {err}"
         )),
     }
 }

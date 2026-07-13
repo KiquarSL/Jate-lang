@@ -27,6 +27,7 @@ pub struct Expr {
 /// Using as source values
 #[derive(Debug, Clone, PartialEq)]
 pub enum ExprKind {
+    Null,
     Int(i64),
     Float(f64),
     Bool(bool),

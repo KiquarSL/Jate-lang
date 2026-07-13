@@ -94,13 +94,13 @@ pub enum TokenKind {
 /// Value types using as literal
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum LiteralKind {
-    /// Integer number, e.g., 1024 86
+    /// Integer number, e.g., `1024` `86`
     Int,
-    /// Float number, e.g., 3.1412 5863.1
+    /// Float number, e.g., `3.1412` `5863.1`
     Float,
-    /// Invalid float number, e.g., 3.141.7.3
+    /// Invalid float number, e.g., `3.141.7.3`
     InvalidFloat,
-    /// String, e.g., "Hello"
+    /// String, e.g., `"Hello"`
     String(StrPrefix),
     /// Char, e.g., `'\n'` `'j'`
     Char,
