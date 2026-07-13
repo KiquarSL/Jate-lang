@@ -43,9 +43,9 @@ pub struct Diagnostic {
 use jate_error::{diag, span, SpanKind, Diagnostic};
 
 let diagnostic = diag!(
-    "Undefined variable",
     "E0001",
-    span!(10, 3, SpanKind::Point)
+    span!(10, 3, SpanKind::Point),
+    "Undefined variable"
 );
 ```
 */
