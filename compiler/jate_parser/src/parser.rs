@@ -1,6 +1,6 @@
 use crate::{TokenItem, TokenStream};
-use jate_ast::{Expr, ExprKind, Stmt, StmtKind, expr, stmt};
-use jate_error::{Diagnostic, diag, span};
+use jate_ast::{expr, stmt, Expr, ExprKind, Stmt, StmtKind, UnOp};
+use jate_error::{diag, span, Diagnostic};
 use jate_lexer::{LiteralKind, StrPrefix, Token, TokenKind};
 use jate_session::SourceFile;
 
@@ -23,7 +23,9 @@ impl<'a> TokenCursor<'a> {
         todo!()
     }
 
-    pub(crate) fn advance_expr(&mut self) -> ExprItem {
+    /// Parse one expression
+    /// Can be used for parse expressions without AST
+    pub fn advance_expr(&mut self) -> ExprItem {
         self.expr()
     }
 
@@ -53,44 +55,80 @@ impl<'a> TokenCursor<'a> {
     }
 
     fn unary(&mut self) -> ExprItem {
-        let left = self.primary();
-        return left;
+        match self.first()? {
+            Ok(token) => match token.kind {
+                TokenKind::Bang => {
+                    let start = self.stream.pos;
+                    let _bang = self.advance()?;
+                    let expr = match self.primary()? {
+                        Ok(expr) => expr,
+                        Err(err) => return Some(Err(err)),
+                    };
+
+                    Some(Ok(expr!(
+                        ExprKind::Unary(UnOp::Not, expr),
+                        span!(start, self.stream.pos - start) 
+                    )))
+                }
+                TokenKind::Minus => {
+                    let start = self.stream.pos;
+                    let _minus = self.advance()?;
+                    let expr = match self.primary()? {
+                        Ok(expr) => expr,
+                        Err(err) => return Some(Err(err)),
+                    };
+
+                    Some(Ok(expr!(
+                        ExprKind::Unary(UnOp::Neg, expr),
+                        span!(start, self.stream.pos - start)
+                    )))
+                }
+                _ => self.primary(),
+            },
+            Err(err) => Some(Err(err)),
+        }
     }
 
     /// Parse value or error
     pub(crate) fn primary(&mut self) -> ExprItem {
-        match self.first() {
-            Some(Ok(token)) => {
+        let token_result = self.first()?;
+        match token_result {
+            Ok(token) => {
                 let pos = self.stream.current_pos(token.len);
                 let s = self.source.get_word(pos, token.len);
+
                 match token.kind {
                     TokenKind::Literal(LiteralKind::Int) => {
-                        self.advance()?;
+                        let _ = self.advance()?;
                         Some(word_to_int(&s, token, pos))
                     }
                     TokenKind::Literal(LiteralKind::Float) => {
-                        self.advance()?;
+                        let _ = self.advance()?;
                         Some(word_to_float(&s, token, pos))
                     }
                     TokenKind::Literal(LiteralKind::Char) => {
-                        self.advance()?;
+                        let _ = self.advance()?;
                         Some(word_to_char(&s, token, pos))
                     }
                     TokenKind::Literal(LiteralKind::String(prefix)) => {
-                        self.advance()?;
+                        let _ = self.advance()?;
                         Some(word_to_string(&s, token, pos, prefix))
                     }
                     TokenKind::Ident => {
                         let span = span!(pos, token.len);
                         Some(match s.as_str() {
-                            "true" => Ok(expr!(ExprKind::Bool(true), span)),
-                            "false" => Ok(expr!(ExprKind::Bool(false), span)),
-                            "null" => Ok(expr!(ExprKind::Null, span)),
+                            "true" => {
+                                let _ = self.advance()?;
+                                Ok(expr!(ExprKind::Bool(true), span))},
+                            "false" => {let _ = self.advance()?;
+                                Ok(expr!(ExprKind::Bool(false), span))},
+                            "null" => {let _ = self.advance()?;
+                                Ok(expr!(ExprKind::Null, span))},
                             _ => self.parse_ident(pos),
                         })
                     }
                     TokenKind::Whitespace => {
-                        self.advance();
+                        let _ = self.advance()?;
                         self.primary()
                     }
                     _ => Some(Err(diag!(
@@ -102,8 +140,7 @@ impl<'a> TokenCursor<'a> {
                     ))),
                 }
             }
-            Some(Err(err)) => Some(Err(err)),
-            None => None,
+            Err(err) => Some(Err(err)),
         }
     }
 
@@ -135,10 +172,9 @@ impl<'a> TokenCursor<'a> {
 
     /// Recusrion variant of advnace for skip whitespaces
     fn advance(&mut self) -> TokenItem {
-        let token = match self.stream.advance() {
-            Some(Ok(token)) => token,
-            Some(Err(err)) => return Some(Err(err)),
-            None => return None,
+        let token = match self.stream.advance()? {
+            Ok(token) => token,
+            Err(err) => return Some(Err(err)),
         };
         // Skip whitespaces for AST
         if token.kind == TokenKind::Whitespace {
@@ -149,10 +185,9 @@ impl<'a> TokenCursor<'a> {
 
     /// Recusrion variant of first for skip whitespaces
     fn first(&mut self) -> TokenItem {
-        let token = match self.stream.first() {
-            Some(Ok(token)) => token,
-            Some(Err(err)) => return Some(Err(err)),
-            None => return None,
+        let token = match self.stream.first()? {
+            Ok(token) => token,
+            Err(err) => return Some(Err(err)),
         };
         // Skip whitespaces for AST
         if token.kind == TokenKind::Whitespace {
