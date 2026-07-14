@@ -147,7 +147,13 @@ impl<'a> Cursor<'a> {
         };
         if first == '\\' {
             self.bump();
-            self.bump();
+            match self.bump() {
+                Some(c) => match c {
+                    '\'' | 't' | 'r' | '\\' => {}
+                    _ => return TokenKind::Literal(LiteralKind::UnknownEscapeChar),
+                },
+                None => return TokenKind::Literal(LiteralKind::InvalidChar),
+            }
         } else {
             self.bump();
         }

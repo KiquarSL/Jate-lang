@@ -186,7 +186,29 @@ fn word_to_float(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
 }
 
 fn word_to_char(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
+    // cute `'` symbols
     let c = &s[1..token.len as usize - 1];
+    if token.len == 4 {
+        // 4 because `'\t'`
+        // Handle escape sequence
+
+        let get = c.chars().nth(1);
+        return match get {
+            Some(co) => Ok(expr!(
+                ExprKind::Char(match co {
+                    't' => '\t',
+                    'r' => '\r',
+                    '\\' => '\\',
+                    '\'' => '\'',
+                    // Unreachable because lexer need define unknown escape sequence and token stream process it and return error
+                    _ => unreachable!(),
+                }),
+                span!(pos, token.len)
+            )),
+            // unreachable because it correct token (Char), lexer and token stream return error if it incorrect
+            None => unreachable!(),
+        };
+    }
     match c.parse::<char>() {
         Ok(c) => Ok(expr!(ExprKind::Char(c), span!(pos, token.len))),
         Err(err) => Err(diag!(

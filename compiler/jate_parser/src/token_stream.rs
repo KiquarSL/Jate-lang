@@ -77,6 +77,11 @@ impl TokenStream {
                 span!(self.pos, token.len),
                 "Invalid float literal"
             )),
+            TokenKind::Literal(LiteralKind::UnknownEscapeChar) => Err(diag!(
+                "E0010",
+                span!(self.pos, token.len),
+                "Unknown escape sequence"
+            )),
             _ => Ok(token),
         }
     }
