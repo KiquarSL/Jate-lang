@@ -199,16 +199,15 @@ impl<'a> Cursor<'a> {
             }
             '*' => {
                 self.bump();
+                let mut last = ' ';
                 loop {
                     let Some(first) = self.bump() else {
                         break;
                     };
-                    let Some(second) = self.bump() else {
-                        break;
-                    };
-                    if first == '*' && second == '/' {
+                    if last == '*' && first == '/' {
                         break;
                     }
+                    last = first;
                 }
                 return TokenKind::BlockComment;
             }

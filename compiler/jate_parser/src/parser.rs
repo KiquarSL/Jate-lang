@@ -83,6 +83,10 @@ impl<'a> TokenCursor<'a> {
                             _ => self.parse_ident(pos)?,
                         })
                     }
+                    TokenKind::Whitespace => {
+                        self.stream.advance();
+                        self.primary()
+                    }
                     _ => todo!(),
                 }
             }
@@ -161,6 +165,7 @@ pub(crate) fn word_to_string(s: &str, token: Token, pos: u32, pref: StrPrefix) -
         StrPrefix::Format | StrPrefix::Raw => 2,
         StrPrefix::No => 1,
     };
-    let s = &s[start..token.len as usize - 1];
+    let end = start + token.len as usize - 1;
+    let s = &s[start..end];
     expr!(ExprKind::String(s.into()), span!(pos, token.len))
 }
