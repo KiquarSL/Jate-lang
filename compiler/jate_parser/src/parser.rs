@@ -107,7 +107,8 @@ impl<'a> TokenCursor<'a> {
 
     /// Parse ident as vector of segments, e.g., `path::to::some`
     // TODO: add handle for calls
-    pub(crate) fn parse_ident(&mut self, mut pos: u32) -> Result<Expr, Diagnostic> {
+    pub(crate) fn parse_ident(&mut self, start: u32) -> Result<Expr, Diagnostic> {
+        let mut pos = start;
         let mut path = vec![];
         while let Some(token_result) = self.first() {
             match token_result {
@@ -127,10 +128,7 @@ impl<'a> TokenCursor<'a> {
                 Err(err) => return Err(err),
             }
         }
-        Ok(expr!(
-            ExprKind::Ident(path),
-            span!(self.stream.pos, self.stream.pos - pos)
-        ))
+        Ok(expr!(ExprKind::Ident(path), span!(start, pos - start)))
     }
 
     /// Recusrion variant of advnace for skip whitespaces
