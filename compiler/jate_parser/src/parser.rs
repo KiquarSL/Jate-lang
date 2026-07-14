@@ -101,17 +101,19 @@ impl<'a> TokenCursor<'a> {
 
     /// Parse ident as vector of segments, e.g., `path::to::some`
     // TODO: add handle for calls
-    pub(crate) fn parse_ident(&mut self, pos: u32) -> Result<Expr, Diagnostic> {
+    pub(crate) fn parse_ident(&mut self, mut pos: u32) -> Result<Expr, Diagnostic> {
         let mut path = vec![];
         while let Some(token_result) = self.stream.first() {
             match token_result {
                 Ok(token) => {
                     if token.kind == TokenKind::Path {
                         self.stream.advance();
+                        pos += 2;
                     } else if token.kind == TokenKind::Ident {
                         let ident = self.source.get_word(pos, token.len).to_string();
                         path.push(ident);
                         self.stream.advance();
+                        pos += token.len;
                     } else {
                         break;
                     }

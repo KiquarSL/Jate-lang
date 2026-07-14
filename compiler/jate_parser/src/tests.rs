@@ -5,7 +5,7 @@ mod tests {
     use jate_session::SourceFile;
     #[test]
     fn test_primary() {
-        let input = " \"some text\" 1234 3.4 a::b::c 'c' '\\t' ";
+        let input = "a::b::c \"some text\" 1234 3.4 'c' '\\t' ";
         println!("{input}");
         let source = SourceFile::new("main.jate".into(), input.into());
         let lx = tokenize(input);

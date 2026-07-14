@@ -308,10 +308,10 @@ impl<'a> Cursor<'a> {
 
     /// Identifier, keyword or prefix with value, e.g., `continue`, `myVar` or prefix with string `f"format string"`
     fn ident(&mut self) -> TokenKind {
-        while let Some(current) = self.bump() {
+        while let Some(current) = self.first() {
             match current {
                 'a'..='z' | 'A'..='Z' | '_' => {
-                    let Some(first) = self.first() else {
+                    let Some(first) = self.bump() else {
                         continue;
                     };
                     if current == 'f' && first == '"' {
