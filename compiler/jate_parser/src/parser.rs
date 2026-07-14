@@ -30,8 +30,7 @@ impl<'a> TokenCursor<'a> {
     }
 
     fn expr(&mut self) -> ExprItem {
-        let left = self.logical();
-        return left;
+        return self.logical();
     }
 
     /// Handle logical operators
@@ -43,8 +42,8 @@ impl<'a> TokenCursor<'a> {
             Err(err) => return Some(Err(err)),
         };
         loop {
-            let (token_op, op) = match self.advance()? {
-                Ok(token) => (
+            let (token_op, op) = match self.advance() {
+                Some(Ok(token)) => (
                     token,
                     match token.kind {
                         TokenKind::And => BinOp::And,
@@ -52,7 +51,8 @@ impl<'a> TokenCursor<'a> {
                         _ => break,
                     },
                 ),
-                Err(err) => return Some(Err(err)),
+                Some(Err(err)) => return Some(Err(err)),
+                None => break,
             };
             let start = self.stream.current_pos(token_op.len);
             let right = match self.unary()? {
@@ -78,8 +78,8 @@ impl<'a> TokenCursor<'a> {
             Err(err) => return Some(Err(err)),
         };
         loop {
-            let (token_op, op) = match self.advance()? {
-                Ok(token) => (
+            let (token_op, op) = match self.advance() {
+                Some(Ok(token)) => (
                     token,
                     match token.kind {
                         TokenKind::Gt => BinOp::Gt,
@@ -91,7 +91,8 @@ impl<'a> TokenCursor<'a> {
                         _ => break,
                     },
                 ),
-                Err(err) => return Some(Err(err)),
+                Some(Err(err)) => return Some(Err(err)),
+                None => break,
             };
             let start = self.stream.current_pos(token_op.len);
             let right = match self.unary()? {
@@ -111,8 +112,8 @@ impl<'a> TokenCursor<'a> {
             Err(err) => return Some(Err(err)),
         };
         loop {
-            let (token_op, op) = match self.advance()? {
-                Ok(token) => (
+            let (token_op, op) = match self.advance() {
+                Some(Ok(token)) => (
                     token,
                     match token.kind {
                         TokenKind::Plus => BinOp::Add,
@@ -120,7 +121,8 @@ impl<'a> TokenCursor<'a> {
                         _ => break,
                     },
                 ),
-                Err(err) => return Some(Err(err)),
+                Some(Err(err)) => return Some(Err(err)),
+                None => break,
             };
             let start = self.stream.current_pos(token_op.len);
             let right = match self.unary()? {
@@ -140,8 +142,8 @@ impl<'a> TokenCursor<'a> {
             Err(err) => return Some(Err(err)),
         };
         loop {
-            let (token_op, op) = match self.advance()? {
-                Ok(token) => (
+            let (token_op, op) = match self.advance() {
+                Some(Ok(token)) => (
                     token,
                     match token.kind {
                         TokenKind::Star => BinOp::Mul,
@@ -149,7 +151,8 @@ impl<'a> TokenCursor<'a> {
                         _ => break,
                     },
                 ),
-                Err(err) => return Some(Err(err)),
+                Some(Err(err)) => return Some(Err(err)),
+                None => break,
             };
             let start = self.stream.current_pos(token_op.len);
             let right = match self.unary()? {
@@ -286,7 +289,7 @@ impl<'a> TokenCursor<'a> {
     }
 
     /// Recusrion variant of advnace for skip whitespaces
-    fn advance(&mut self) -> TokenItem {
+    pub(crate) fn advance(&mut self) -> TokenItem {
         let token = match self.stream.advance()? {
             Ok(token) => token,
             Err(err) => return Some(Err(err)),
@@ -299,7 +302,7 @@ impl<'a> TokenCursor<'a> {
     }
 
     /// Recusrion variant of first for skip whitespaces
-    fn first(&mut self) -> TokenItem {
+    pub(crate) fn first(&mut self) -> TokenItem {
         let token = match self.stream.first()? {
             Ok(token) => token,
             Err(err) => return Some(Err(err)),

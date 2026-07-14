@@ -16,13 +16,13 @@ pub struct Span {
     pub kind: SpanKind,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Help {
     message: String,
     span: Span,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Diagnostic {
     pub message: String,
     pub err_code: String,
