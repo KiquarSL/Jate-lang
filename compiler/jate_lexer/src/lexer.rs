@@ -83,6 +83,8 @@ impl<'a> Cursor<'a> {
             '-' => self.minus(),
             '>' => self.gt(),
             '<' => self.lt(),
+            '|' => self.pipe(),
+            '&' => self.amp(),
             '/' => self.slash(),
             '!' => self.bang(),
             '.' => self.dot(),
@@ -356,6 +358,34 @@ impl<'a> Cursor<'a> {
                 return TokenKind::Le;
             }
             _ => TokenKind::Lt,
+        }
+    }
+
+    /// `&` `&&`
+    fn amp(&mut self) -> TokenKind {
+        let Some(first) = self.first() else {
+            return TokenKind::Amp;
+        };
+        match first {
+            '&' => {
+                self.bump();
+                return TokenKind::And;
+            }
+            _ => TokenKind::Amp,
+        }
+    }
+
+    /// `|` `||`
+    fn pipe(&mut self) -> TokenKind {
+        let Some(first) = self.first() else {
+            return TokenKind::Pipe;
+        };
+        match first {
+            '|' => {
+                self.bump();
+                return TokenKind::Or;
+            }
+            _ => TokenKind::Pipe,
         }
     }
 }
