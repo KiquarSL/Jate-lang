@@ -33,7 +33,8 @@ impl TokenStream {
             self.pos += token.len;
             return current;
         } else {
-            None
+            self.next_token = None;
+            current
         }
     }
 

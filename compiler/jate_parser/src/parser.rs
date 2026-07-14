@@ -5,8 +5,8 @@ use jate_lexer::{LiteralKind, StrPrefix, Token, TokenKind};
 use jate_session::SourceFile;
 
 /// Result wrapper for get statement when successful parse and return vector of diagnostics when errors
-pub type StmtItem = Result<Stmt, Vec<Diagnostic>>;
-pub type ExprItem = Result<Expr, Diagnostic>;
+pub type StmtItem = Option<Result<Stmt, Vec<Diagnostic>>>;
+pub type ExprItem = Option<Result<Expr, Diagnostic>>;
 
 pub fn parse(stream: TokenStream, source: &SourceFile) -> impl Iterator<Item = StmtItem> {
     let mut cursor = TokenCursor { stream, source };
@@ -65,28 +65,28 @@ impl<'a> TokenCursor<'a> {
                 let s = self.source.get_word(pos, token.len);
                 match token.kind {
                     TokenKind::Literal(LiteralKind::Int) => {
-                        self.advance();
-                        word_to_int(&s, token, pos)
+                        self.advance()?;
+                        Some(word_to_int(&s, token, pos))
                     }
                     TokenKind::Literal(LiteralKind::Float) => {
-                        self.advance();
-                        word_to_float(&s, token, pos)
+                        self.advance()?;
+                        Some(word_to_float(&s, token, pos))
                     }
                     TokenKind::Literal(LiteralKind::Char) => {
-                        self.advance();
-                        word_to_char(&s, token, pos)
+                        self.advance()?;
+                        Some(word_to_char(&s, token, pos))
                     }
                     TokenKind::Literal(LiteralKind::String(prefix)) => {
-                        self.advance();
-                        Ok(word_to_string(&s, token, pos, prefix))
+                        self.advance()?;
+                        Some(word_to_string(&s, token, pos, prefix))
                     }
                     TokenKind::Ident => {
                         let span = span!(pos, token.len);
-                        Ok(match s.as_str() {
-                            "true" => expr!(ExprKind::Bool(true), span),
-                            "false" => expr!(ExprKind::Bool(false), span),
-                            "null" => expr!(ExprKind::Null, span),
-                            _ => self.parse_ident(pos)?,
+                        Some(match s.as_str() {
+                            "true" => Ok(expr!(ExprKind::Bool(true), span)),
+                            "false" => Ok(expr!(ExprKind::Bool(false), span)),
+                            "null" => Ok(expr!(ExprKind::Null, span)),
+                            _ => self.parse_ident(pos),
                         })
                     }
                     TokenKind::Whitespace => {
@@ -96,12 +96,12 @@ impl<'a> TokenCursor<'a> {
                     _ => todo!(),
                 }
             }
-            Some(Err(err)) => Err(err),
-            None => Err(diag!(
+            Some(Err(err)) => Some(Err(err)),
+            None => Some(Err(diag!(
                 "E0006",
                 span!(self.stream.pos, 1),
                 "Value for expression not found"
-            )),
+            ))),
         }
     }
 
@@ -195,12 +195,17 @@ fn word_to_char(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
     }
 }
 
-pub(crate) fn word_to_string(s: &str, token: Token, pos: u32, pref: StrPrefix) -> Expr {
+pub(crate) fn word_to_string(
+    s: &str,
+    token: Token,
+    pos: u32,
+    pref: StrPrefix,
+) -> Result<Expr, Diagnostic> {
     let start = match pref {
         StrPrefix::Format | StrPrefix::Raw => 2,
         StrPrefix::No => 1,
     };
     let end = start + token.len as usize - 2;
     let s = &s[start..end];
-    expr!(ExprKind::String(s.into()), span!(pos, token.len))
+    Ok(expr!(ExprKind::String(s.into()), span!(pos, token.len)))
 }

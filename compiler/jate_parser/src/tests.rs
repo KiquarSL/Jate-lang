@@ -15,8 +15,13 @@ mod tests {
             source: &source,
         };
 
-        while let Ok(ex) = parsed.advance_expr() {
-            eprintln!("{:?}", ex);
+        loop {
+            let ex = parsed.advance_expr();
+            if ex.is_none() {
+                break;
+            }
+            println!("{:?}", ex);
         }
+        println!("{:?}", parsed.advance_expr());
     }
 }

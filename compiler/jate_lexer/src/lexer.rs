@@ -142,7 +142,7 @@ impl<'a> Cursor<'a> {
 
     /// `'c'`
     fn char_lit(&mut self) -> TokenKind {
-        let Some(first) = self.bump() else {
+        let Some(first) = self.first() else {
             return TokenKind::Literal(LiteralKind::InvalidChar);
         };
         if first == '\\' {
