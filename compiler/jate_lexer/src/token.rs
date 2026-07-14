@@ -110,8 +110,6 @@ pub enum LiteralKind {
     UnterminatedChar,
     /// String, e.g., `"string`
     UnterminatedString,
-    /// Char, e.g., `'\Z'`
-    UnknownEscapeChar,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
