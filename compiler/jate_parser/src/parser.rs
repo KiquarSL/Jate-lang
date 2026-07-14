@@ -1,6 +1,6 @@
 use crate::{TokenItem, TokenStream};
-use jate_ast::{expr, stmt, Expr, ExprKind, Stmt, StmtKind, UnOp};
-use jate_error::{diag, span, Diagnostic};
+use jate_ast::{BinOp, Expr, ExprKind, Stmt, StmtKind, UnOp, expr, stmt};
+use jate_error::{Diagnostic, diag, span};
 use jate_lexer::{LiteralKind, StrPrefix, Token, TokenKind};
 use jate_session::SourceFile;
 
@@ -34,26 +34,113 @@ impl<'a> TokenCursor<'a> {
         return left;
     }
 
+    /// Handle logical operators
+    /// `&&` - And
+    /// `||` - Or
     fn logical(&mut self) -> ExprItem {
         let left = self.comparison();
         return left;
     }
 
+    /// Handle comparison operators
+    /// `>` - Greater
+    /// `>=` - Greater equal
+    /// `<` - Less
+    /// `<=` - Less equal
+    /// `==` - Equals
+    /// `!=` - Not equals
     fn comparison(&mut self) -> ExprItem {
-        let left = self.additive();
-        return left;
+        let mut left = match self.unary()? {
+            Ok(left) => left,
+            Err(err) => return Some(Err(err)),
+        };
+        loop {
+            let (token_op, op) = match self.advance()? {
+                Ok(token) => (
+                    token,
+                    match token.kind {
+                        TokenKind::Gt => BinOp::Gt,
+                        TokenKind::Ge => BinOp::Ge,
+                        TokenKind::Lt => BinOp::Lt,
+                        TokenKind::Le => BinOp::Le,
+                        TokenKind::Eq => BinOp::Eq,
+                        TokenKind::Ne => BinOp::Ne,
+                        _ => break,
+                    },
+                ),
+                Err(err) => return Some(Err(err)),
+            };
+            let start = self.stream.current_pos(token_op.len);
+            let right = match self.unary()? {
+                Ok(right) => right,
+                Err(err) => return Some(Err(err)),
+            };
+
+            left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
+        }
+        return Some(Ok(left));
     }
 
+    /// Handle `+` - add and `-` - subtract operators
     fn additive(&mut self) -> ExprItem {
-        let left = self.multiplicative();
-        return left;
+        let mut left = match self.unary()? {
+            Ok(left) => left,
+            Err(err) => return Some(Err(err)),
+        };
+        loop {
+            let (token_op, op) = match self.advance()? {
+                Ok(token) => (
+                    token,
+                    match token.kind {
+                        TokenKind::Plus => BinOp::Add,
+                        TokenKind::Minus => BinOp::Sub,
+                        _ => break,
+                    },
+                ),
+                Err(err) => return Some(Err(err)),
+            };
+            let start = self.stream.current_pos(token_op.len);
+            let right = match self.unary()? {
+                Ok(right) => right,
+                Err(err) => return Some(Err(err)),
+            };
+
+            left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
+        }
+        return Some(Ok(left));
     }
 
+    /// Handle `*` - multiply and `/` - divide operators
     fn multiplicative(&mut self) -> ExprItem {
-        let left = self.unary();
-        return left;
+        let mut left = match self.unary()? {
+            Ok(left) => left,
+            Err(err) => return Some(Err(err)),
+        };
+        loop {
+            let (token_op, op) = match self.advance()? {
+                Ok(token) => (
+                    token,
+                    match token.kind {
+                        TokenKind::Star => BinOp::Mul,
+                        TokenKind::Slash => BinOp::Div,
+                        _ => break,
+                    },
+                ),
+                Err(err) => return Some(Err(err)),
+            };
+            let start = self.stream.current_pos(token_op.len);
+            let right = match self.unary()? {
+                Ok(right) => right,
+                Err(err) => return Some(Err(err)),
+            };
+
+            left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
+        }
+        return Some(Ok(left));
     }
 
+    /// Handle unary operators
+    /// Supported operators: `!` - not, `-` - negative
     fn unary(&mut self) -> ExprItem {
         match self.first()? {
             Ok(token) => match token.kind {
@@ -67,7 +154,7 @@ impl<'a> TokenCursor<'a> {
 
                     Some(Ok(expr!(
                         ExprKind::Unary(UnOp::Not, expr),
-                        span!(start, self.stream.pos - start) 
+                        span!(start, self.stream.pos - start)
                     )))
                 }
                 TokenKind::Minus => {
@@ -89,7 +176,7 @@ impl<'a> TokenCursor<'a> {
         }
     }
 
-    /// Parse value or error
+    /// Parse source value
     pub(crate) fn primary(&mut self) -> ExprItem {
         let token_result = self.first()?;
         match token_result {
@@ -119,11 +206,16 @@ impl<'a> TokenCursor<'a> {
                         Some(match s.as_str() {
                             "true" => {
                                 let _ = self.advance()?;
-                                Ok(expr!(ExprKind::Bool(true), span))},
-                            "false" => {let _ = self.advance()?;
-                                Ok(expr!(ExprKind::Bool(false), span))},
-                            "null" => {let _ = self.advance()?;
-                                Ok(expr!(ExprKind::Null, span))},
+                                Ok(expr!(ExprKind::Bool(true), span))
+                            }
+                            "false" => {
+                                let _ = self.advance()?;
+                                Ok(expr!(ExprKind::Bool(false), span))
+                            }
+                            "null" => {
+                                let _ = self.advance()?;
+                                Ok(expr!(ExprKind::Null, span))
+                            }
                             _ => self.parse_ident(pos),
                         })
                     }
