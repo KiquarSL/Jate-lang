@@ -15,9 +15,8 @@ mod tests {
             source: &source,
         };
 
-        while let Ok(ex) = parsed.primary() {
+        while let Ok(ex) = parsed.advance_expr() {
             eprintln!("{:?}", ex);
-            parsed.stream.advance(); // Skip whitespace
         }
     }
 }

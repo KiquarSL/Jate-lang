@@ -1,4 +1,4 @@
-use crate::TokenStream;
+use crate::{TokenItem, TokenStream};
 use jate_ast::{Expr, ExprKind, Stmt, StmtKind, expr, stmt};
 use jate_error::{Diagnostic, diag, span};
 use jate_lexer::{LiteralKind, StrPrefix, Token, TokenKind};
@@ -23,55 +23,61 @@ impl<'a> TokenCursor<'a> {
         todo!()
     }
 
-    pub(crate) fn advance_expr(&mut self) -> Option<Expr> {
-        todo!()
+    pub(crate) fn advance_expr(&mut self) -> ExprItem {
+        self.expr()
     }
 
     fn expr(&mut self) -> ExprItem {
-        todo!()
+        let left = self.logical();
+        return left;
     }
 
     fn logical(&mut self) -> ExprItem {
-        todo!()
+        let left = self.comparison();
+        return left;
     }
 
     fn comparison(&mut self) -> ExprItem {
-        todo!()
+        let left = self.additive();
+        return left;
     }
 
     fn additive(&mut self) -> ExprItem {
-        todo!()
+        let left = self.multiplicative();
+        return left;
     }
 
     fn multiplicative(&mut self) -> ExprItem {
-        todo!()
+        let left = self.unary();
+        return left;
     }
 
     fn unary(&mut self) -> ExprItem {
-        todo!()
+        let left = self.primary();
+        return left;
     }
 
     /// Parse value or error
     pub(crate) fn primary(&mut self) -> ExprItem {
-        match self.stream.first() {
+        match self.first() {
             Some(Ok(token)) => {
                 let pos = self.stream.current_pos(token.len);
                 let s = self.source.get_word(pos, token.len);
                 match token.kind {
                     TokenKind::Literal(LiteralKind::Int) => {
-                        self.stream.advance();
+                        self.advance();
                         word_to_int(&s, token, pos)
                     }
                     TokenKind::Literal(LiteralKind::Float) => {
-                        self.stream.advance();
+                        self.advance();
                         word_to_float(&s, token, pos)
                     }
                     TokenKind::Literal(LiteralKind::Char) => {
-                        self.stream.advance();
+                        self.advance();
                         word_to_char(&s, token, pos)
                     }
                     TokenKind::Literal(LiteralKind::String(prefix)) => {
-                        self.stream.advance();
+                        self.advance();
                         Ok(word_to_string(&s, token, pos, prefix))
                     }
                     TokenKind::Ident => {
@@ -84,7 +90,7 @@ impl<'a> TokenCursor<'a> {
                         })
                     }
                     TokenKind::Whitespace => {
-                        self.stream.advance();
+                        self.advance();
                         self.primary()
                     }
                     _ => todo!(),
@@ -103,16 +109,16 @@ impl<'a> TokenCursor<'a> {
     // TODO: add handle for calls
     pub(crate) fn parse_ident(&mut self, mut pos: u32) -> Result<Expr, Diagnostic> {
         let mut path = vec![];
-        while let Some(token_result) = self.stream.first() {
+        while let Some(token_result) = self.first() {
             match token_result {
                 Ok(token) => {
                     if token.kind == TokenKind::Path {
-                        self.stream.advance();
+                        self.advance();
                         pos += 2;
                     } else if token.kind == TokenKind::Ident {
                         let ident = self.source.get_word(pos, token.len).to_string();
                         path.push(ident);
-                        self.stream.advance();
+                        self.advance();
                         pos += token.len;
                     } else {
                         break;
@@ -125,6 +131,35 @@ impl<'a> TokenCursor<'a> {
             ExprKind::Ident(path),
             span!(self.stream.pos, self.stream.pos - pos)
         ))
+    }
+
+    /// Recusrion variant of advnace for skip whitespaces
+    fn advance(&mut self) -> TokenItem {
+        let token = match self.stream.advance() {
+            Some(Ok(token)) => token,
+            Some(Err(err)) => return Some(Err(err)),
+            None => return None,
+        };
+        // Skip whitespaces for AST
+        if token.kind == TokenKind::Whitespace {
+            return self.advance();
+        }
+        return Some(Ok(token));
+    }
+
+    /// Recusrion variant of first for skip whitespaces
+    fn first(&mut self) -> TokenItem {
+        let token = match self.stream.first() {
+            Some(Ok(token)) => token,
+            Some(Err(err)) => return Some(Err(err)),
+            None => return None,
+        };
+        // Skip whitespaces for AST
+        if token.kind == TokenKind::Whitespace {
+            self.stream.advance();
+            return self.first();
+        }
+        return Some(Ok(token));
     }
 }
 
@@ -167,7 +202,7 @@ pub(crate) fn word_to_string(s: &str, token: Token, pos: u32, pref: StrPrefix) -
         StrPrefix::Format | StrPrefix::Raw => 2,
         StrPrefix::No => 1,
     };
-    let end = start + token.len as usize - 1;
+    let end = start + token.len as usize - 2;
     let s = &s[start..end];
     expr!(ExprKind::String(s.into()), span!(pos, token.len))
 }
