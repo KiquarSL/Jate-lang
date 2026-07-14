@@ -38,8 +38,31 @@ impl<'a> TokenCursor<'a> {
     /// `&&` - And
     /// `||` - Or
     fn logical(&mut self) -> ExprItem {
-        let left = self.comparison();
-        return left;
+        let mut left = match self.unary()? {
+            Ok(left) => left,
+            Err(err) => return Some(Err(err)),
+        };
+        loop {
+            let (token_op, op) = match self.advance()? {
+                Ok(token) => (
+                    token,
+                    match token.kind {
+                        TokenKind::And => BinOp::And,
+                        TokenKind::Or => BinOp::Or,
+                        _ => break,
+                    },
+                ),
+                Err(err) => return Some(Err(err)),
+            };
+            let start = self.stream.current_pos(token_op.len);
+            let right = match self.unary()? {
+                Ok(right) => right,
+                Err(err) => return Some(Err(err)),
+            };
+
+            left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
+        }
+        return Some(Ok(left));
     }
 
     /// Handle comparison operators
