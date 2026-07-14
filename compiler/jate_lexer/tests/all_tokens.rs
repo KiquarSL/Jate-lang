@@ -38,7 +38,7 @@ static EXPECTED_KINDS: [TokenKind; 32] = [
 
 #[test]
 fn main() {
-    let source = "'\\t' 'j' ; ^ ! != !? : :: := + - * / .. ..= . = == ( ) { } [ ] 124 3.1412 ident continue /* comment */ \"string\"// line comment";
+    let source = "'\\t' 'j' ; ^ ! != !? : :: := + - * / .. ..= . = == ( ) { } [ ] 124 3.1412 ident continue /* comment */ \"string\" // line comment";
     let mut position = 0;
     let mut i = 0;
     for token in tokenize(source) {

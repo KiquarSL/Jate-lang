@@ -125,7 +125,7 @@ impl<'a> Cursor<'a> {
     /// `!` `!?` `!=`
     fn bang(&mut self) -> TokenKind {
         let Some(first) = self.first() else {
-            return TokenKind::Eof;
+            return TokenKind::Bang;
         };
         match first {
             '?' => {
@@ -163,10 +163,11 @@ impl<'a> Cursor<'a> {
 
     /// `.` `..` `..=
     fn dot(&mut self) -> TokenKind {
-        let Some(first) = self.bump() else {
+        let Some(first) = self.first() else {
             return TokenKind::Dot;
         };
         if first == '.' {
+            self.bump();
             let Some(second) = self.first() else {
                 return TokenKind::Range;
             };
