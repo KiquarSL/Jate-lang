@@ -93,15 +93,17 @@ impl<'a> TokenCursor<'a> {
                         self.advance();
                         self.primary()
                     }
-                    _ => todo!(),
+                    _ => Some(Err(diag!(
+                        "E0006",
+                        span!(self.stream.pos, 1),
+                        vec![],
+                        "Expacted value, getted: {:?}",
+                        token
+                    ))),
                 }
             }
             Some(Err(err)) => Some(Err(err)),
-            None => Some(Err(diag!(
-                "E0006",
-                span!(self.stream.pos, 1),
-                "Value for expression not found"
-            ))),
+            None => None,
         }
     }
 
