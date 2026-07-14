@@ -283,7 +283,7 @@ impl<'a> Cursor<'a> {
     fn number(&mut self) -> TokenKind {
         let mut has_dot = false;
         let mut is_invalid = false;
-        while let Some(current) = self.bump() {
+        while let Some(current) = self.first() {
             if current == '.' {
                 if has_dot {
                     is_invalid = true;
@@ -293,6 +293,7 @@ impl<'a> Cursor<'a> {
             } else if current < '0' || current > '9' {
                 break;
             }
+            self.bump();
         }
         let lit_kind = if has_dot {
             if is_invalid {
