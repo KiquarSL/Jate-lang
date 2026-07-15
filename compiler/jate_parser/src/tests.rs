@@ -1,5 +1,5 @@
 mod tests {
-    use crate::{TokenCursor, TokenStream, word_to_string};
+    use crate::{TokenCursor, TokenStream};
     use jate_ast::ExprKind;
     use jate_lexer::{LiteralKind, StrPrefix, Token, tokenize};
     use jate_session::SourceFile;

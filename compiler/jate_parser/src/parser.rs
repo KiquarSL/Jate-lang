@@ -32,7 +32,11 @@ macro_rules! get_token_from_item {
 pub type StmtItem = Option<Result<Stmt, Vec<Diagnostic>>>;
 pub type ExprItem = Option<Result<Expr, Diagnostic>>;
 
-pub fn parse(stream: TokenStream, source: &SourceFile) -> impl Iterator<Item = StmtItem> {
+pub fn parse(
+    stream: Box<dyn Iterator<Item = Token>>,
+    source: &SourceFile,
+) -> impl Iterator<Item = StmtItem> {
+    let stream = TokenStream::new(stream);
     let mut cursor = TokenCursor { stream, source };
     return std::iter::from_fn(move || cursor.advance_stmt());
 }
