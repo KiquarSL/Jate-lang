@@ -1,8 +1,32 @@
 use crate::{TokenItem, TokenStream};
-use jate_ast::{BinOp, Expr, ExprKind, Stmt, StmtKind, UnOp, expr, stmt};
+use jate_ast::{BinOp, Expr, ExprKind, Stmt, UnOp, expr, stmt};
 use jate_error::{Diagnostic, diag, span};
 use jate_lexer::{LiteralKind, StrPrefix, Token, TokenKind};
 use jate_session::SourceFile;
+
+/// Automatic return from function if item is None (end of token stream) or Diagnostic
+/// Return `Expr` if item valid for parsing
+/// Using for functions under expression parsing
+macro_rules! get_expr_from_item {
+    ($expr_item:expr) => {
+        match $expr_item? {
+            Ok(expr) => expr,
+            Err(err) => return Some(Err(err)),
+        }
+    };
+}
+
+/// Automatic return from function if item is None (end of token stream) or Diagnostic
+/// Return `Token` if item valid for parsing
+/// Using for `advance` and `first` functions
+macro_rules! get_token_from_item {
+    ($expr_item:expr) => {
+        match $expr_item? {
+            Ok(expr) => expr,
+            Err(err) => return Some(Err(err)),
+        }
+    };
+}
 
 /// Result wrapper for get statement when successful parse and return vector of diagnostics when errors
 pub type StmtItem = Option<Result<Stmt, Vec<Diagnostic>>>;
@@ -37,28 +61,18 @@ impl<'a> TokenCursor<'a> {
     /// `&&` - And
     /// `||` - Or
     fn logical(&mut self) -> ExprItem {
-        let mut left = match self.comparison()? {
-            Ok(left) => left,
-            Err(err) => return Some(Err(err)),
-        };
+        let mut left = get_expr_from_item!(self.comparison());
         loop {
-            let (token_op, op) = match self.advance() {
-                Some(Ok(token)) => (
-                    token,
-                    match token.kind {
-                        TokenKind::And => BinOp::And,
-                        TokenKind::Or => BinOp::Or,
-                        _ => break,
-                    },
-                ),
-                Some(Err(err)) => return Some(Err(err)),
-                None => break,
+            let token_op = get_token_from_item!(self.first());
+            let op = match token_op.kind {
+                TokenKind::And => BinOp::And,
+                TokenKind::Or => BinOp::Or,
+                _ => break,
             };
+
+            let _ = self.advance();
             let start = self.stream.current_pos(token_op.len);
-            let right = match self.comparison()? {
-                Ok(right) => right,
-                Err(err) => return Some(Err(err)),
-            };
+            let right = get_expr_from_item!(self.comparison());
 
             left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
         }
@@ -73,32 +87,22 @@ impl<'a> TokenCursor<'a> {
     /// `==` - Equals
     /// `!=` - Not equals
     fn comparison(&mut self) -> ExprItem {
-        let mut left = match self.additive()? {
-            Ok(left) => left,
-            Err(err) => return Some(Err(err)),
-        };
+        let mut left = get_expr_from_item!(self.additive());
         loop {
-            let (token_op, op) = match self.advance() {
-                Some(Ok(token)) => (
-                    token,
-                    match token.kind {
-                        TokenKind::Gt => BinOp::Gt,
-                        TokenKind::Ge => BinOp::Ge,
-                        TokenKind::Lt => BinOp::Lt,
-                        TokenKind::Le => BinOp::Le,
-                        TokenKind::Eq => BinOp::Eq,
-                        TokenKind::Ne => BinOp::Ne,
-                        _ => break,
-                    },
-                ),
-                Some(Err(err)) => return Some(Err(err)),
-                None => break,
+            let token_op = get_token_from_item!(self.first());
+            let op = match token_op.kind {
+                TokenKind::Gt => BinOp::Gt,
+                TokenKind::Ge => BinOp::Ge,
+                TokenKind::Lt => BinOp::Lt,
+                TokenKind::Le => BinOp::Le,
+                TokenKind::Eq => BinOp::Eq,
+                TokenKind::Ne => BinOp::Ne,
+                _ => break,
             };
+
+            let _ = self.advance();
             let start = self.stream.current_pos(token_op.len);
-            let right = match self.additive()? {
-                Ok(right) => right,
-                Err(err) => return Some(Err(err)),
-            };
+            let right = get_expr_from_item!(self.additive());
 
             left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
         }
@@ -107,28 +111,18 @@ impl<'a> TokenCursor<'a> {
 
     /// Handle `+` - add and `-` - subtract operators
     fn additive(&mut self) -> ExprItem {
-        let mut left = match self.multiplicative()? {
-            Ok(left) => left,
-            Err(err) => return Some(Err(err)),
-        };
+        let mut left = get_expr_from_item!(self.multiplicative());
         loop {
-            let (token_op, op) = match self.advance() {
-                Some(Ok(token)) => (
-                    token,
-                    match token.kind {
-                        TokenKind::Plus => BinOp::Add,
-                        TokenKind::Minus => BinOp::Sub,
-                        _ => break,
-                    },
-                ),
-                Some(Err(err)) => return Some(Err(err)),
-                None => break,
+            let token_op = get_token_from_item!(self.first());
+            let op = match token_op.kind {
+                TokenKind::Plus => BinOp::Add,
+                TokenKind::Minus => BinOp::Sub,
+                _ => break,
             };
+
+            let _ = self.advance();
             let start = self.stream.current_pos(token_op.len);
-            let right = match self.multiplicative()? {
-                Ok(right) => right,
-                Err(err) => return Some(Err(err)),
-            };
+            let right = get_expr_from_item!(self.multiplicative());
 
             left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
         }
@@ -137,31 +131,18 @@ impl<'a> TokenCursor<'a> {
 
     /// Handle `*` - multiply and `/` - divide operators
     fn multiplicative(&mut self) -> ExprItem {
-        let mut left = match self.unary()? {
-            Ok(left) => left,
-            Err(err) => return Some(Err(err)),
-        };
-        dbg!("multiplicative");
+        let mut left = get_expr_from_item!(self.unary());
         loop {
-            let (token_op, op) = match self.first() {
-                Some(Ok(token)) => (
-                    token,
-                    match token.kind {
-                        TokenKind::Star => BinOp::Mul,
-                        TokenKind::Slash => BinOp::Div,
-                        _ => break,
-                    },
-                ),
-                Some(Err(err)) => return Some(Err(err)),
-                None => break,
+            let token_op = get_token_from_item!(self.first());
+            let op = match token_op.kind {
+                TokenKind::Star => BinOp::Mul,
+                TokenKind::Slash => BinOp::Div,
+                _ => break,
             };
 
             let _ = self.advance();
             let start = self.stream.current_pos(token_op.len);
-            let right = match self.unary()? {
-                Ok(right) => right,
-                Err(err) => return Some(Err(err)),
-            };
+            let right = get_expr_from_item!(self.unary());
 
             left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
         }
@@ -171,97 +152,107 @@ impl<'a> TokenCursor<'a> {
     /// Handle unary operators
     /// Supported operators: `!` - not, `-` - negative
     fn unary(&mut self) -> ExprItem {
-        match self.first()? {
-            Ok(token) => match token.kind {
-                TokenKind::Bang => {
-                    let start = self.stream.pos;
-                    let _bang = self.advance()?;
-                    let expr = match self.primary()? {
-                        Ok(expr) => expr,
-                        Err(err) => return Some(Err(err)),
-                    };
+        let token: Token = get_token_from_item!(self.first());
+        let start = self.stream.pos;
+        match token.kind {
+            TokenKind::Bang => {
+                let _bang = self.advance()?;
+                let expr = get_expr_from_item!(self.primary());
 
-                    Some(Ok(expr!(
-                        ExprKind::Unary(UnOp::Not, expr),
-                        span!(start, self.stream.pos - start)
-                    )))
-                }
-                TokenKind::Minus => {
-                    let start = self.stream.pos;
-                    let _minus = self.advance()?;
-                    let expr = match self.primary()? {
-                        Ok(expr) => expr,
-                        Err(err) => return Some(Err(err)),
-                    };
+                Some(Ok(expr!(
+                    ExprKind::Unary(UnOp::Not, expr),
+                    span!(start, self.stream.pos - start)
+                )))
+            }
+            TokenKind::Minus => {
+                
+                let _minus = self.advance()?;
+                let expr = match self.primary()? {
+                    Ok(expr) => expr,
+                    Err(err) => return Some(Err(err)),
+                };
 
-                    Some(Ok(expr!(
-                        ExprKind::Unary(UnOp::Neg, expr),
-                        span!(start, self.stream.pos - start)
-                    )))
-                }
-                _ => self.primary(),
-            },
-            Err(err) => Some(Err(err)),
+                Some(Ok(expr!(
+                    ExprKind::Unary(UnOp::Neg, expr),
+                    span!(start, self.stream.pos - start)
+                )))
+            }
+            _ => self.primary(),
         }
     }
 
     /// Parse source value
     pub(crate) fn primary(&mut self) -> ExprItem {
-        let token_result = self.first()?;
-        match token_result {
-            Ok(token) => {
-                let pos = self.stream.current_pos(token.len);
-                let s = self.source.get_word(pos, token.len);
+        let token = get_expr_from_item!(self.first());
 
-                match token.kind {
-                    TokenKind::Literal(LiteralKind::Int) => {
-                        let _ = self.advance()?;
-                        Some(word_to_int(&s, token, pos))
-                    }
-                    TokenKind::Literal(LiteralKind::Float) => {
-                        let _ = self.advance()?;
-                        Some(word_to_float(&s, token, pos))
-                    }
-                    TokenKind::Literal(LiteralKind::Char) => {
-                        let _ = self.advance()?;
-                        Some(word_to_char(&s, token, pos))
-                    }
-                    TokenKind::Literal(LiteralKind::String(prefix)) => {
-                        let _ = self.advance()?;
-                        Some(word_to_string(&s, token, pos, prefix))
-                    }
-                    TokenKind::Ident => {
-                        let span = span!(pos, token.len);
-                        Some(match s.as_str() {
-                            "true" => {
-                                let _ = self.advance()?;
-                                Ok(expr!(ExprKind::Bool(true), span))
-                            }
-                            "false" => {
-                                let _ = self.advance()?;
-                                Ok(expr!(ExprKind::Bool(false), span))
-                            }
-                            "null" => {
-                                let _ = self.advance()?;
-                                Ok(expr!(ExprKind::Null, span))
-                            }
-                            _ => self.parse_ident(pos),
-                        })
-                    }
-                    TokenKind::Whitespace => {
-                        let _ = self.advance()?;
-                        self.primary()
-                    }
-                    _ => Some(Err(diag!(
-                        "E0006",
-                        span!(self.stream.pos, 1),
-                        vec![],
-                        "Expacted value, getted: {:?}",
-                        token
-                    ))),
-                }
+        let pos = self.stream.current_pos(token.len);
+        let s = self.source.get_word(pos, token.len);
+
+        match token.kind {
+            TokenKind::Literal(LiteralKind::Int) => {
+                let _ = self.advance()?;
+                Some(word_to_int(&s, token, pos))
             }
-            Err(err) => Some(Err(err)),
+            TokenKind::Literal(LiteralKind::Float) => {
+                let _ = self.advance()?;
+                Some(word_to_float(&s, token, pos))
+            }
+            TokenKind::Literal(LiteralKind::Char) => {
+                let _ = self.advance()?;
+                Some(word_to_char(&s, token, pos))
+            }
+            TokenKind::Literal(LiteralKind::String(prefix)) => {
+                let _ = self.advance()?;
+                Some(word_to_string(&s, token, pos, prefix))
+            }
+            TokenKind::Ident => {
+                let span = span!(pos, token.len);
+                Some(match s.as_str() {
+                    "true" => {
+                        let _ = self.advance()?;
+                        Ok(expr!(ExprKind::Bool(true), span))
+                    }
+                    "false" => {
+                        let _ = self.advance()?;
+                        Ok(expr!(ExprKind::Bool(false), span))
+                    }
+                    "null" => {
+                        let _ = self.advance()?;
+                        Ok(expr!(ExprKind::Null, span))
+                    }
+                    _ => self.parse_ident(pos),
+                })
+            }
+            TokenKind::LParen => {
+                let _ = self.advance()?;
+                let expr = self.expr();
+                let token = get_expr_from_item!(self.advance());
+                match token.kind {
+                    TokenKind::RParen => {}
+                    _ => {
+                        return Some(Err(diag!(
+                            "E0011",
+                            span!(pos, token.len),
+                            vec![],
+                            "Expected ')', found: {:?}",
+                            token
+                        )));
+                    }
+                };
+
+                return expr;
+            }
+            TokenKind::Whitespace => {
+                let _ = self.advance()?;
+                self.primary()
+            }
+            _ => Some(Err(diag!(
+                "E0006",
+                span!(self.stream.pos, 1),
+                vec![],
+                "Expacted value, found: {:?}",
+                token
+            ))),
         }
     }
 
@@ -293,10 +284,7 @@ impl<'a> TokenCursor<'a> {
 
     /// Recusrion variant of advnace for skip whitespaces
     pub(crate) fn advance(&mut self) -> TokenItem {
-        let token = match self.stream.advance()? {
-            Ok(token) => token,
-            Err(err) => return Some(Err(err)),
-        };
+        let token = get_expr_from_item!(self.stream.advance());
         // Skip whitespaces for AST
         if token.kind == TokenKind::Whitespace {
             return self.advance();
@@ -306,10 +294,8 @@ impl<'a> TokenCursor<'a> {
 
     /// Recusrion variant of first for skip whitespaces
     pub(crate) fn first(&mut self) -> TokenItem {
-        let token = match self.stream.first()? {
-            Ok(token) => token,
-            Err(err) => return Some(Err(err)),
-        };
+        let token = get_expr_from_item!(self.stream.first());
+
         // Skip whitespaces for AST
         if token.kind == TokenKind::Whitespace {
             self.stream.advance();
