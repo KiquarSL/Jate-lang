@@ -152,12 +152,12 @@ impl<'a> TokenCursor<'a> {
     /// Handle unary operators
     /// Supported operators: `!` - not, `-` - negative
     fn unary(&mut self) -> ExprItem {
-        let token: Token = get_token_from_item!(self.first());
+        let token = get_token_from_item!(self.first());
         let start = self.stream.pos;
         match token.kind {
             TokenKind::Bang => {
                 let _bang = self.advance()?;
-                let expr = get_expr_from_item!(self.primary());
+                let expr = get_expr_from_item!(self.postfix());
 
                 Some(Ok(expr!(
                     ExprKind::Unary(UnOp::Not, expr),
@@ -165,19 +165,33 @@ impl<'a> TokenCursor<'a> {
                 )))
             }
             TokenKind::Minus => {
-                
                 let _minus = self.advance()?;
-                let expr = match self.primary()? {
-                    Ok(expr) => expr,
-                    Err(err) => return Some(Err(err)),
-                };
+                let expr = get_expr_from_item!(self.postfix());
 
                 Some(Ok(expr!(
                     ExprKind::Unary(UnOp::Neg, expr),
                     span!(start, self.stream.pos - start)
                 )))
             }
-            _ => self.primary(),
+            _ => self.postfix(),
+        }
+    }
+
+    /// Handle posifix operators
+    /// Supported operators: `!?` - unwrap
+    fn postfix(&mut self) -> ExprItem {
+        let expr_item = self.primary();
+        let expr = get_expr_from_item!(expr_item.clone());
+        let start = self.stream.pos;
+        match get_token_from_item!(self.first()).kind {
+            TokenKind::Unwrap => {
+                let _unwrap = self.advance()?;
+                Some(Ok(expr!(
+                    ExprKind::Unwrap(expr),
+                    span!(start, self.stream.pos - start)
+                )))
+            }
+            _ => expr_item,
         }
     }
 
@@ -265,13 +279,13 @@ impl<'a> TokenCursor<'a> {
             match token_result {
                 Ok(token) => {
                     if token.kind == TokenKind::Path {
-                        self.advance();
                         pos += 2;
+                        self.advance();
                     } else if token.kind == TokenKind::Ident {
                         let ident = self.source.get_word(pos, token.len).to_string();
                         path.push(ident);
-                        self.advance();
                         pos += token.len;
+                        self.advance();
                     } else {
                         break;
                     }

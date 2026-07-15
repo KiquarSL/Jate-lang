@@ -6,7 +6,7 @@ mod tests {
 
     #[test]
     fn test_all_single_expressions() {
-        let input = "a::b::c \"some text\" 1234 -3.4 'c' !true '\\t' ";
+        let input = "a::b::c!? \"some text\" 1234 -3.4 'c' !true '\\t'";
         println!("{input}");
         let source = SourceFile::new("main.jate".into(), input.into());
         let lx = tokenize(input);

@@ -38,6 +38,8 @@ pub enum ExprKind {
     /// chain of idents, e.g., `math::sqrt(x)`
     Ident(Vec<Ident>),
     Call(Expr, Vec<Expr>),
+    /// Unwrap operator, e.g., `nullableObj!?`
+    Unwrap(Expr),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
