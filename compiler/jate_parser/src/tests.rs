@@ -1,7 +1,7 @@
 mod tests {
     use crate::{TokenCursor, TokenStream, word_to_string};
     use jate_ast::ExprKind;
-    use jate_lexer::{LiteralKind, StrPrefix, Token, TokenKind, tokenize};
+    use jate_lexer::{LiteralKind, StrPrefix, Token, tokenize};
     use jate_session::SourceFile;
 
     #[test]
@@ -28,7 +28,7 @@ mod tests {
 
     #[test]
     fn test_all_binary_expressions() {
-        let input = "2+3+4";
+        let input = "2 + 2 * 2 / 4";
         println!("{input}");
         let source = SourceFile::new("main.jate".into(), input.into());
         let lx = tokenize(input);

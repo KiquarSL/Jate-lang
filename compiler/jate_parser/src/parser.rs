@@ -37,7 +37,7 @@ impl<'a> TokenCursor<'a> {
     /// `&&` - And
     /// `||` - Or
     fn logical(&mut self) -> ExprItem {
-        let mut left = match self.unary()? {
+        let mut left = match self.comparison()? {
             Ok(left) => left,
             Err(err) => return Some(Err(err)),
         };
@@ -55,7 +55,7 @@ impl<'a> TokenCursor<'a> {
                 None => break,
             };
             let start = self.stream.current_pos(token_op.len);
-            let right = match self.unary()? {
+            let right = match self.comparison()? {
                 Ok(right) => right,
                 Err(err) => return Some(Err(err)),
             };
@@ -73,7 +73,7 @@ impl<'a> TokenCursor<'a> {
     /// `==` - Equals
     /// `!=` - Not equals
     fn comparison(&mut self) -> ExprItem {
-        let mut left = match self.unary()? {
+        let mut left = match self.additive()? {
             Ok(left) => left,
             Err(err) => return Some(Err(err)),
         };
@@ -95,7 +95,7 @@ impl<'a> TokenCursor<'a> {
                 None => break,
             };
             let start = self.stream.current_pos(token_op.len);
-            let right = match self.unary()? {
+            let right = match self.additive()? {
                 Ok(right) => right,
                 Err(err) => return Some(Err(err)),
             };
@@ -107,7 +107,7 @@ impl<'a> TokenCursor<'a> {
 
     /// Handle `+` - add and `-` - subtract operators
     fn additive(&mut self) -> ExprItem {
-        let mut left = match self.unary()? {
+        let mut left = match self.multiplicative()? {
             Ok(left) => left,
             Err(err) => return Some(Err(err)),
         };
@@ -125,7 +125,7 @@ impl<'a> TokenCursor<'a> {
                 None => break,
             };
             let start = self.stream.current_pos(token_op.len);
-            let right = match self.unary()? {
+            let right = match self.multiplicative()? {
                 Ok(right) => right,
                 Err(err) => return Some(Err(err)),
             };
@@ -141,8 +141,9 @@ impl<'a> TokenCursor<'a> {
             Ok(left) => left,
             Err(err) => return Some(Err(err)),
         };
+        dbg!("multiplicative");
         loop {
-            let (token_op, op) = match self.advance() {
+            let (token_op, op) = match self.first() {
                 Some(Ok(token)) => (
                     token,
                     match token.kind {
@@ -154,6 +155,8 @@ impl<'a> TokenCursor<'a> {
                 Some(Err(err)) => return Some(Err(err)),
                 None => break,
             };
+
+            let _ = self.advance();
             let start = self.stream.current_pos(token_op.len);
             let right = match self.unary()? {
                 Ok(right) => right,
