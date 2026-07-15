@@ -37,16 +37,16 @@ pub fn parse(
     source: &SourceFile,
 ) -> impl Iterator<Item = StmtItem> {
     let stream = TokenStream::new(stream);
-    let mut cursor = TokenCursor { stream, source };
+    let mut cursor = AstCursor { stream, source };
     return std::iter::from_fn(move || cursor.advance_stmt());
 }
 
-pub(crate) struct TokenCursor<'a> {
+pub(crate) struct AstCursor<'a> {
     pub stream: TokenStream,
     pub source: &'a SourceFile,
 }
 
-impl<'a> TokenCursor<'a> {
+impl<'a> AstCursor<'a> {
     pub fn advance_stmt(&mut self) -> Option<StmtItem> {
         todo!()
     }
@@ -57,6 +57,64 @@ impl<'a> TokenCursor<'a> {
         self.expr()
     }
 
+    /// Parse ident as vector of segments, e.g., `path::to::some`
+    // TODO: add handle for calls
+    pub(crate) fn parse_ident(&mut self, start: u32) -> Result<Expr, Diagnostic> {
+        let mut pos = start;
+        let mut path = vec![];
+        while let Some(token_result) = self.first() {
+            match token_result {
+                Ok(token) => {
+                    if token.kind == TokenKind::Path {
+                        pos += 2;
+                        self.advance();
+                    } else if token.kind == TokenKind::Ident {
+                        let ident = self.source.get_word(pos, token.len).to_string();
+                        path.push(ident);
+                        pos += token.len;
+                        self.advance();
+                    } else {
+                        break;
+                    }
+                }
+                Err(err) => return Err(err),
+            }
+        }
+        Ok(expr!(ExprKind::Ident(path), span!(start, pos - start)))
+    }
+
+    /// Recusrion variant of advnace for skip whitespaces
+    pub(crate) fn advance(&mut self) -> TokenItem {
+        let token = get_expr_from_item!(self.stream.advance());
+        // Skip whitespaces for AST
+        if token.kind == TokenKind::Whitespace {
+            return self.advance();
+        }
+        return Some(Ok(token));
+    }
+
+    /// Recusrion variant of first for skip whitespaces
+    pub(crate) fn first(&mut self) -> TokenItem {
+        let token = get_expr_from_item!(self.stream.first());
+
+        // Skip whitespaces for AST
+        if token.kind == TokenKind::Whitespace {
+            self.stream.advance();
+            return self.first();
+        }
+        return Some(Ok(token));
+    }
+}
+
+/// Block methods for statements
+impl<'a> AstCursor<'a> {
+    fn stmt(&mut self) -> StmtItem {
+        todo!()
+    }
+}
+
+/// Block methods for expressions
+impl<'a> AstCursor<'a> {
     fn expr(&mut self) -> ExprItem {
         return self.logical();
     }
@@ -185,13 +243,12 @@ impl<'a> TokenCursor<'a> {
     /// Supported operators: `!?` - unwrap
     fn postfix(&mut self) -> ExprItem {
         let expr_item = self.primary();
-        let expr = get_expr_from_item!(expr_item.clone());
         let start = self.stream.pos;
         match get_token_from_item!(self.first()).kind {
             TokenKind::Unwrap => {
                 let _unwrap = self.advance()?;
                 Some(Ok(expr!(
-                    ExprKind::Unwrap(expr),
+                    ExprKind::Unwrap(get_expr_from_item!(expr_item)),
                     span!(start, self.stream.pos - start)
                 )))
             }
@@ -272,54 +329,6 @@ impl<'a> TokenCursor<'a> {
                 token
             ))),
         }
-    }
-
-    /// Parse ident as vector of segments, e.g., `path::to::some`
-    // TODO: add handle for calls
-    pub(crate) fn parse_ident(&mut self, start: u32) -> Result<Expr, Diagnostic> {
-        let mut pos = start;
-        let mut path = vec![];
-        while let Some(token_result) = self.first() {
-            match token_result {
-                Ok(token) => {
-                    if token.kind == TokenKind::Path {
-                        pos += 2;
-                        self.advance();
-                    } else if token.kind == TokenKind::Ident {
-                        let ident = self.source.get_word(pos, token.len).to_string();
-                        path.push(ident);
-                        pos += token.len;
-                        self.advance();
-                    } else {
-                        break;
-                    }
-                }
-                Err(err) => return Err(err),
-            }
-        }
-        Ok(expr!(ExprKind::Ident(path), span!(start, pos - start)))
-    }
-
-    /// Recusrion variant of advnace for skip whitespaces
-    pub(crate) fn advance(&mut self) -> TokenItem {
-        let token = get_expr_from_item!(self.stream.advance());
-        // Skip whitespaces for AST
-        if token.kind == TokenKind::Whitespace {
-            return self.advance();
-        }
-        return Some(Ok(token));
-    }
-
-    /// Recusrion variant of first for skip whitespaces
-    pub(crate) fn first(&mut self) -> TokenItem {
-        let token = get_expr_from_item!(self.stream.first());
-
-        // Skip whitespaces for AST
-        if token.kind == TokenKind::Whitespace {
-            self.stream.advance();
-            return self.first();
-        }
-        return Some(Ok(token));
     }
 }
 
