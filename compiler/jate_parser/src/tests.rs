@@ -1,60 +1,117 @@
-mod tests {
-    use crate::{AstCursor, TokenStream};
-    use jate_ast::ExprKind;
-    use jate_lexer::{LiteralKind, StrPrefix, tokenize};
-    use jate_session::SourceFile;
+use crate::{AstCursor, TokenStream};
+use jate_ast::{BinOp, Expr, ExprKind, UnOp, expr};
+use jate_error::*;
+use jate_lexer::tokenize;
+use jate_session::SourceFile;
 
-    #[test]
-    fn test_all_single_expressions() {
-        let input = "a::b::c!? \"some text\" 1234 -3.4 'c' !true '\\t'";
-        println!("{input}");
-        let source = SourceFile::new("main.jate".into(), input.into());
-        let lx = tokenize(input);
-        let ts = TokenStream::new(Box::new(lx));
-        let mut parsed = AstCursor {
-            stream: ts,
-            source: &source,
-        };
-
-        loop {
-            let ex = match parsed.advance_expr() {
-                Some(res) => match res {
-                    Ok(expr) => expr,
-                    Err(err) => {
-                        eprintln!("{:?}", err);
-                        break;
-                    }
-                },
-                None => break,
-            };
-            println!("{:?}", ex);
+fn parse_test(input: &'static str) -> Vec<Expr> {
+    println!("\x1b[32mSource:\x1b[0m {input}");
+    let source = SourceFile::new("main.jate".into(), input.into());
+    let lx = tokenize(input);
+    let ts = TokenStream::new(Box::new(lx));
+    let mut parsed = AstCursor {
+        stream: ts,
+        source: &source,
+    };
+    let mut exprs = vec![];
+    let mut i = 0;
+    loop {
+        match parsed.advance_expr() {
+            Some(res) => match res {
+                Ok(expr) => {
+                    println!("\x1b[32m{i}.\x1b[0m {}", expr);
+                    exprs.push(expr);
+                }
+                Err(err) => {
+                    eprintln!("\x1b[34m{i}.\x1b[0m {:?}", err);
+                }
+            },
+            None => break,
         }
+        i += 1;
     }
+    exprs
+}
 
-    #[test]
-    fn test_all_binary_expressions() {
-        let input = "2 + 2 * 2 / 4 - 1";
-        println!("{input}");
-        let source = SourceFile::new("main.jate".into(), input.into());
-        let lx = tokenize(input);
-        let ts = TokenStream::new(Box::new(lx));
-        let mut parsed = AstCursor {
-            stream: ts,
-            source: &source,
-        };
+#[test]
+fn test_all_single_expressions() {
+    let input = "-3.4 a::b::c someNullable!? \"some text\" 1234 'c' !true '\\t'";
+    let exprs = parse_test(input);
+    let expected = vec![
+        // -3.4
+        expr!(
+            ExprKind::Unary(UnOp::Neg, expr!(ExprKind::Float(3.4), span!(1, 3))),
+            span!(0, 4)
+        ),
+        // a::b::c
+        expr!(
+            ExprKind::Ident(vec!["a".to_string(), "b".to_string(), "c".to_string()]),
+            span!(5, 7)
+        ),
+        // someNullable!?
+        expr!(
+            ExprKind::Unwrap(expr!(
+                ExprKind::Ident(vec!["someNullable".to_string()]),
+                span!(13, 12)
+            )),
+            span!(13, 14)
+        ),
+        // "some text"
+        expr!(ExprKind::String("some text".to_string()), span!(28, 11)),
+        // 1234
+        expr!(ExprKind::Int(1234), span!(40, 4)),
+        // 'c'
+        expr!(ExprKind::Char('c'), span!(45, 3)),
+        // !true
+        expr!(
+            ExprKind::Unary(UnOp::Not, expr!(ExprKind::Bool(true), span!(49, 4))),
+            span!(48, 5)
+        ),
+        // '\t'
+        expr!(ExprKind::Char('\t'), span!(54, 4)),
+    ];
+    assert_eq!(exprs, expected);
+}
 
-        loop {
-            let ex = match parsed.advance_expr() {
-                Some(res) => match res {
-                    Ok(expr) => expr,
-                    Err(err) => {
-                        eprintln!("{:?}", err);
-                        break;
-                    }
-                },
-                None => break,
-            };
-            println!("{:?}", ex);
-        }
-    }
+#[test]
+fn test_all_binary_expressions() {
+    let input = "2 + 2 * 2 / 4 - 1";
+    let exprs = parse_test(input);
+
+    let expected = vec![Expr {
+        kind: Box::new(ExprKind::Bin(
+            Expr {
+                kind: Box::new(ExprKind::Int(2)),
+                span: span!(0, 1),
+            },
+            BinOp::Add,
+            Expr {
+                kind: Box::new(ExprKind::Bin(
+                    Expr {
+                        kind: Box::new(ExprKind::Bin(
+                            Expr {
+                                kind: Box::new(ExprKind::Int(2)),
+                                span: span!(4, 1),
+                            },
+                            BinOp::Mul,
+                            Expr {
+                                kind: Box::new(ExprKind::Int(2)),
+                                span: span!(8, 1),
+                            },
+                        )),
+                        span: span!(4, 6),
+                    },
+                    BinOp::Div,
+                    Expr {
+                        kind: Box::new(ExprKind::Int(4)),
+                        span: span!(12, 1),
+                    },
+                )),
+                span: span!(4, 10),
+            },
+        )),
+        span: span!(0, 18),
+    }];
+
+    assert_eq!(exprs, expected);
 }

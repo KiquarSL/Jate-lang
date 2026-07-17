@@ -1,6 +1,8 @@
 mod parser;
-mod tests;
 mod token_stream;
+
+#[cfg(test)]
+mod tests;
 
 pub use parser::{StmtItem, parse};
 pub use token_stream::{TokenItem, TokenStream};

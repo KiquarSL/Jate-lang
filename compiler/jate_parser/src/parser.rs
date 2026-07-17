@@ -1,6 +1,6 @@
 use crate::{TokenItem, TokenStream};
-use jate_ast::{BinOp, Expr, ExprKind, Stmt, UnOp, expr, stmt};
-use jate_error::{Diagnostic, diag, span};
+use jate_ast::{expr, stmt, BinOp, Expr, ExprKind, Stmt, UnOp};
+use jate_error::{diag, span, Diagnostic};
 use jate_lexer::{LiteralKind, StrPrefix, Token, TokenKind};
 use jate_session::SourceFile;
 
@@ -60,19 +60,28 @@ impl<'a> AstCursor<'a> {
     /// Parse ident as vector of segments, e.g., `path::to::some`
     // TODO: add handle for calls
     pub(crate) fn parse_ident(&mut self, start: u32) -> Result<Expr, Diagnostic> {
-        let mut pos = start;
         let mut path = vec![];
-        while let Some(token_result) = self.first() {
-            match token_result {
+        while let Some(token_res) = self.first() {
+            match token_res {
                 Ok(token) => {
-                    if token.kind == TokenKind::Path {
-                        pos += 2;
-                        self.advance();
-                    } else if token.kind == TokenKind::Ident {
-                        let ident = self.source.get_word(pos, token.len).to_string();
+                    if token.kind == TokenKind::Ident {
+                        let ident = self
+                            .source
+                            .get_word(self.stream.current_pos(token.len), token.len)
+                            .to_string();
                         path.push(ident);
-                        pos += token.len;
                         self.advance();
+                        match self.first() {
+                            Some(Ok(token)) => {
+                                if token.kind != TokenKind::Path {
+                                    break;
+                                } else {
+                                    self.advance();
+                                }
+                            }
+                            Some(Err(err)) => return Err(err),
+                            None => break,
+                        }
                     } else {
                         break;
                     }
@@ -80,7 +89,10 @@ impl<'a> AstCursor<'a> {
                 Err(err) => return Err(err),
             }
         }
-        Ok(expr!(ExprKind::Ident(path), span!(start, pos - start)))
+        Ok(expr!(
+            ExprKind::Ident(path),
+            span!(start, self.stream.pos - start)
+        ))
     }
 
     /// Recusrion variant of advnace for skip whitespaces

@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum SpanKind {
     /// `+++`
@@ -14,6 +16,12 @@ pub struct Span {
     pub start: u32,
     pub len: u32,
     pub kind: SpanKind,
+}
+
+impl fmt::Display for Span {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "start: {}, len: {}", self.start, self.len)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

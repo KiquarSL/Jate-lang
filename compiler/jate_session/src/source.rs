@@ -28,6 +28,10 @@ impl SourceFile {
         }
     }
 
+    pub fn source(&self) -> &str {
+        &self.src
+    }
+
     /// Get line by line number
     /// Return clone of line
     pub fn get_line(self, line_number: usize) -> String {
