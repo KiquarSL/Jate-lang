@@ -1,8 +1,13 @@
 use super::*;
-use jate_ast::ExprKind::*;
-use jate_ast::*;
-use jate_error::*;
-use jate_lexer::*;
+use jate_ast::Expr;
+use jate_ast::ExprKind;
+use jate_ast::expr;
+use jate_error::span;
+use jate_lexer::LiteralKind;
+use jate_lexer::StrPrefix;
+use jate_lexer::Token;
+use jate_lexer::TokenKind;
+use jate_lexer::tokenize;
 use jate_session::SourceFile;
 
 macro_rules! vec_str {
@@ -11,143 +16,100 @@ macro_rules! vec_str {
     };
 }
 
-#[test]
-fn test_parser_primary() {
-    let input = "123 ident::some true 3.14 'c' '\\t' (2)";
-    println!("\x1b[32mSource:\x1b[0m {input}");
-    let source = SourceFile::new("main.jate".into(), input.into());
-    let lx = tokenize(input);
-    let ts = TokenStream::new(Box::new(lx));
-    let mut parsed = AstCursor {
-        stream: ts,
-        source: &source,
+macro_rules! assert_expr_eq {
+    ($left:expr, $right:expr, $idx:expr) => {
+        assert_eq!(
+            $left, $right,
+            "\nExpression at index {} does not match:\n  left:  {:?}\n  right: {:?}",
+            $idx, $left, $right
+        );
     };
-    let mut exprs = vec![];
-    let expected = vec![
-        expr!(Int(123), span!(0, 3)),
-        expr!(Ident(vec_str!("ident", "some")), span!(4, 11)),
-        expr!(Bool(true), span!(16, 4)),
-        expr!(Float(3.14), span!(21, 4)),
-        expr!(Char('c'), span!(26, 3)),
-        expr!(Char('\t'), span!(30, 4)),
-        expr!(Int(2), span!(36, 1)),
-    ];
-    for i in 0..expected.len() {
-        match parsed.primary() {
-            Some(res) => match res {
-                Ok(expr) => {
-                    exprs.push(expr.clone());
-                    println!("\x1b[32m{i}.\x1b[0m {}", expr);
-                    assert_eq!(expr, expected[i]);
-                }
-                Err(err) => {
-                    eprintln!("\x1b[34m{i}.\x1b[0m {:?}", err);
-                }
-            },
-            None => break,
-        }
-    }
-    assert_eq!(exprs, expected);
 }
 
 #[test]
-fn test_word_to_string() {
+fn test_parser_primary() {
+    let input = "123 ident::some true 3.14 'c' '\\t' (2)";
+    let source = SourceFile::new("main.jate".into(), input.into());
+    let tokens = tokenize(input);
+    let stream = TokenStream::new(Box::new(tokens));
+    let mut cursor = AstCursor {
+        stream,
+        source: &source,
+    };
+
+    let expected = vec![
+        expr!(ExprKind::Int(123), span!(0, 3)),
+        expr!(ExprKind::Ident(vec_str!("ident", "some")), span!(4, 11)),
+        expr!(ExprKind::Bool(true), span!(16, 4)),
+        expr!(ExprKind::Float(3.14), span!(21, 4)),
+        expr!(ExprKind::Char('c'), span!(26, 3)),
+        expr!(ExprKind::Char('\t'), span!(30, 4)),
+        expr!(ExprKind::Int(2), span!(36, 1)),
+    ];
+
+    let mut actual = Vec::with_capacity(expected.len());
+    for (i, expected_expr) in expected.iter().enumerate() {
+        match cursor.primary() {
+            Some(Ok(expr)) => {
+                actual.push(expr.clone());
+                assert_expr_eq!(&expr, expected_expr, i);
+            }
+            Some(Err(err)) => {
+                panic!("\x1b[31mParser error at index {}: {:?}\x1b[0m", i, err);
+            }
+            None => break,
+        }
+    }
+
+    assert_eq!(actual, expected);
+}
+
+#[test]
+fn test_word_to_string_format_prefix() {
+    let source = "f\"text\"";
     let pref = StrPrefix::Format;
     let token = Token::new(TokenKind::Literal(LiteralKind::String(pref)), 7);
-    let source = "f\"text\"";
-    let extracted = word_to_string(source, token, 0, pref);
+
+    let result = word_to_string(source, token, 0, pref);
+
     assert_eq!(
-        extracted,
+        result,
         Ok(expr!(ExprKind::String("text".to_string()), span!(0, 7)))
     );
+}
 
+#[test]
+fn test_word_to_string_no_prefix() {
+    let source = "\"some\"";
     let pref = StrPrefix::No;
     let token = Token::new(TokenKind::Literal(LiteralKind::String(pref)), 6);
-    let source = "\"some\"";
-    let extracted = word_to_string(source, token, 0, pref);
+
+    let result = word_to_string(source, token, 0, pref);
+
     assert_eq!(
-        extracted,
+        result,
         Ok(expr!(ExprKind::String("some".to_string()), span!(0, 6)))
     );
 }
 
-/*#[test]
-fn test_all_single_expressions() {
-    let input = "3.4 a::b::c someNullable!? \"some text\" 1234 'c' !true '\\t'";
-    let exprs = parse_test(input);
-    let expected = vec![
-        // 3.4
-        expr!(ExprKind::Float(3.4), span!(0, 3)),
-        // a::b::c
-        expr!(
-            ExprKind::Ident(vec!["a".to_string(), "b".to_string(), "c".to_string()]),
-            span!(4, 7)
-        ),
-        // someNullable!?
-        expr!(
-            ExprKind::Unwrap(expr!(
-                ExprKind::Ident(vec!["someNullable".to_string()]),
-                span!(12, 12)
-            )),
-            span!(12, 14)
-        ),
-        // "some text"
-        expr!(ExprKind::String("some text".to_string()), span!(27, 11)),
-        // 1234
-        expr!(ExprKind::Int(1234), span!(39, 4)),
-        // 'c'
-        expr!(ExprKind::Char('c'), span!(44, 3)),
-        // !true
-        expr!(
-            ExprKind::Unary(UnOp::Not, expr!(ExprKind::Bool(true), span!(49, 4))),
-            span!(48, 5)
-        ),
-        // '\t'
-        expr!(ExprKind::Char('\t'), span!(54, 4)),
-    ];
-    assert_eq!(exprs, expected);
-}*/
+#[test]
+fn test_word_to_char_simple() {
+    let source = "'c'";
+    let lit = LiteralKind::Char;
+    let token = Token::new(TokenKind::Literal(lit), 3);
 
-/*#[test]
-fn test_all_binary_expressions() {
-    let input = "2 + 2 * 2 / 4 - 1";
-    let exprs = parse_test(input);
+    let result = word_to_char(source, token, 0);
 
-    let expected = vec![Expr {
-        kind: Box::new(ExprKind::Bin(
-            Expr {
-                kind: Box::new(ExprKind::Int(2)),
-                span: span!(0, 1),
-            },
-            BinOp::Add,
-            Expr {
-                kind: Box::new(ExprKind::Bin(
-                    Expr {
-                        kind: Box::new(ExprKind::Bin(
-                            Expr {
-                                kind: Box::new(ExprKind::Int(2)),
-                                span: span!(4, 1),
-                            },
-                            BinOp::Mul,
-                            Expr {
-                                kind: Box::new(ExprKind::Int(2)),
-                                span: span!(8, 1),
-                            },
-                        )),
-                        span: span!(4, 6),
-                    },
-                    BinOp::Div,
-                    Expr {
-                        kind: Box::new(ExprKind::Int(4)),
-                        span: span!(12, 1),
-                    },
-                )),
-                span: span!(4, 10),
-            },
-        )),
-        span: span!(0, 18),
-    }];
-
-    assert_eq!(exprs, expected);
+    assert_eq!(result, Ok(expr!(ExprKind::Char('c'), span!(0, 3))));
 }
-*/
+
+#[test]
+fn test_word_to_char_escape() {
+    let source = "'\\t'";
+    let lit = LiteralKind::Char;
+    let token = Token::new(TokenKind::Literal(lit), 4);
+
+    let result = word_to_char(source, token, 0);
+
+    assert_eq!(result, Ok(expr!(ExprKind::Char('\t'), span!(0, 4))));
+}

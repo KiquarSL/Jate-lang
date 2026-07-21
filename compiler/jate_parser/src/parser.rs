@@ -395,7 +395,7 @@ fn escape_symbol(s: &str, pos: u32, len: u32) -> Result<char, Diagnostic> {
 /// Transform char literal from text
 /// Return expression if successful
 /// Return diagnostic if failed
-fn word_to_char(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
+pub(crate) fn word_to_char(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
     let inner = &s[1..token.len as usize - 1];
     if inner.len() >= 2 {
         let escape = escape_symbol(inner, pos, token.len)?;
