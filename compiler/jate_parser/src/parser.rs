@@ -1,6 +1,6 @@
 use crate::{TokenItem, TokenStream};
-use jate_ast::{expr, stmt, BinOp, Expr, ExprKind, Stmt, UnOp};
-use jate_error::{diag, span, Diagnostic};
+use jate_ast::{BinOp, Expr, ExprKind, Stmt, UnOp, expr};
+use jate_error::{Diagnostic, diag, span};
 use jate_lexer::{LiteralKind, StrPrefix, Token, TokenKind};
 use jate_session::SourceFile;
 
@@ -62,56 +62,63 @@ impl<'a> AstCursor<'a> {
     pub(crate) fn parse_ident(&mut self, start: u32) -> Result<Expr, Diagnostic> {
         let mut path = vec![];
         while let Some(token_res) = self.first() {
-            match token_res {
-                Ok(token) => {
-                    if token.kind == TokenKind::Ident {
-                        let ident = self.source.get_word(self.stream.pos, token.len).to_string();
-                        path.push(ident);
-                        self.advance();
-                        match self.first() {
-                            Some(Ok(token)) => {
-                                if token.kind != TokenKind::Path {
-                                    break;
-                                } else {
-                                    self.advance();
-                                }
-                            }
-                            Some(Err(err)) => return Err(err),
-                            None => break,
+            let token = token_res?;
+            self.skip_whitespaces();
+            if token.kind == TokenKind::Ident {
+                let ident = self.source.get_word(self.stream.pos, token.len);
+                path.push(ident);
+                self.advance();
+                self.skip_whitespaces();
+
+                match self.first() {
+                    Some(token_res) => {
+                        if token_res?.kind == TokenKind::Path {
+                            self.advance();
+                        } else {
+                            break;
                         }
-                    } else {
-                        break;
                     }
+                    None => break,
                 }
-                Err(err) => return Err(err),
+            } else {
+                break;
             }
         }
         Ok(expr!(
             ExprKind::Ident(path),
-            span!(start, self.stream.pos - start)
+            span!(start, self.stream.pos - start - 1)
         ))
     }
 
-    /// Recusrion variant of advnace for skip whitespaces
-    pub(crate) fn advance(&mut self) -> TokenItem {
-        let token = get_expr_from_item!(self.stream.advance());
-        // Skip whitespaces for AST
-        if token.kind == TokenKind::Whitespace {
-            return self.advance();
+    fn skip_whitespaces(&mut self) -> Option<Diagnostic> {
+        while let Some(token_res) = self.first() {
+            match token_res {
+                Ok(token) => match token.kind {
+                    TokenKind::Whitespace | TokenKind::LineComment | TokenKind::BlockComment => {
+                        self.advance();
+                    }
+                    _ => break,
+                },
+                Err(err) => return Some(err),
+            }
         }
-        return Some(Ok(token));
+        return None;
+    }
+
+    fn advance(&mut self) -> TokenItem {
+        return self.stream.advance();
     }
 
     /// Recusrion variant of first for skip whitespaces
     pub(crate) fn first(&mut self) -> TokenItem {
-        let token = get_expr_from_item!(self.stream.first());
+        return self.stream.first();
+    }
 
-        // Skip whitespaces for AST
-        if token.kind == TokenKind::Whitespace {
-            self.stream.advance();
-            return self.first();
-        }
-        return Some(Ok(token));
+    fn advance_get_word(&mut self, token: Token) -> (u32, String) {
+        let pos = self.stream.pos;
+        let _ = self.advance();
+        let s = self.source.get_word(pos, token.len);
+        (pos, s)
     }
 }
 
@@ -125,149 +132,149 @@ impl<'a> AstCursor<'a> {
 /// Block methods for expressions
 impl<'a> AstCursor<'a> {
     fn expr(&mut self) -> ExprItem {
-        todo!(); // return self.logical();
-    } /*
+        return self.logical();
+    }
 
+    /// Handle logical operators
+    /// `&&` - And
+    /// `||` - Or
+    fn logical(&mut self) -> ExprItem {
+        let mut left = get_expr_from_item!(self.comparison());
+        loop {
+            let token_op = get_token_from_item!(self.first());
+            let op = match token_op.kind {
+                TokenKind::And => BinOp::And,
+                TokenKind::Or => BinOp::Or,
+                _ => break,
+            };
 
-      /// Handle logical operators
-      /// `&&` - And
-      /// `||` - Or
-      fn logical(&mut self) -> ExprItem {
-      let mut left = get_expr_from_item!(self.comparison());
-      loop {
-      let token_op = get_token_from_item!(self.first());
-      let op = match token_op.kind {
-      TokenKind::And => BinOp::And,
-      TokenKind::Or => BinOp::Or,
-      _ => break,
-      };
+            let _ = self.advance();
+            let start = self.stream.pos;
+            let right = get_expr_from_item!(self.comparison());
 
-      let _ = self.advance();
-      let start = self.stream.pos;
-      let right = get_expr_from_item!(self.comparison());
+            left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
+        }
+        return Some(Ok(left));
+    }
 
-      left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
-      }
-      return Some(Ok(left));
-      }
+    /// Handle comparison operators
+    /// `>` - Greater
+    /// `>=` - Greater equal
+    /// `<` - Less
+    /// `<=` - Less equal
+    /// `==` - Equals
+    /// `!=` - Not equals
+    fn comparison(&mut self) -> ExprItem {
+        let mut left = get_expr_from_item!(self.additive());
+        loop {
+            let token_op = get_token_from_item!(self.first());
+            let op = match token_op.kind {
+                TokenKind::Gt => BinOp::Gt,
+                TokenKind::Ge => BinOp::Ge,
+                TokenKind::Lt => BinOp::Lt,
+                TokenKind::Le => BinOp::Le,
+                TokenKind::Eq => BinOp::Eq,
+                TokenKind::Ne => BinOp::Ne,
+                _ => break,
+            };
 
-      /// Handle comparison operators
-      /// `>` - Greater
-      /// `>=` - Greater equal
-      /// `<` - Less
-      /// `<=` - Less equal
-      /// `==` - Equals
-      /// `!=` - Not equals
-      fn comparison(&mut self) -> ExprItem {
-      let mut left = get_expr_from_item!(self.additive());
-      loop {
-      let token_op = get_token_from_item!(self.first());
-      let op = match token_op.kind {
-      TokenKind::Gt => BinOp::Gt,
-      TokenKind::Ge => BinOp::Ge,
-      TokenKind::Lt => BinOp::Lt,
-      TokenKind::Le => BinOp::Le,
-      TokenKind::Eq => BinOp::Eq,
-      TokenKind::Ne => BinOp::Ne,
-      _ => break,
-      };
+            let _ = self.advance();
+            let start = self.stream.pos;
+            let right = get_expr_from_item!(self.additive());
 
-      let _ = self.advance();
-      let start = self.stream.pos;
-      let right = get_expr_from_item!(self.additive());
+            left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
+        }
+        return Some(Ok(left));
+    }
 
-      left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
-      }
-      return Some(Ok(left));
-      }
+    /// Handle `+` - add and `-` - subtract operators
+    fn additive(&mut self) -> ExprItem {
+        let mut left = get_expr_from_item!(self.multiplicative());
+        loop {
+            let token_op = get_token_from_item!(self.first());
+            let op = match token_op.kind {
+                TokenKind::Plus => BinOp::Add,
+                TokenKind::Minus => BinOp::Sub,
+                _ => break,
+            };
 
-      /// Handle `+` - add and `-` - subtract operators
-      fn additive(&mut self) -> ExprItem {
-      let mut left = get_expr_from_item!(self.multiplicative());
-      loop {
-      let token_op = get_token_from_item!(self.first());
-      let op = match token_op.kind {
-      TokenKind::Plus => BinOp::Add,
-      TokenKind::Minus => BinOp::Sub,
-      _ => break,
-      };
+            let _ = self.advance();
+            let start = self.stream.pos;
+            let right = get_expr_from_item!(self.multiplicative());
 
-      let _ = self.advance();
-      let start = self.stream.pos;
-      let right = get_expr_from_item!(self.multiplicative());
+            left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
+        }
+        return Some(Ok(left));
+    }
 
-      left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
-      }
-      return Some(Ok(left));
-      }
+    /// Handle `*` - multiply and `/` - divide operators
+    fn multiplicative(&mut self) -> ExprItem {
+        let mut left = get_expr_from_item!(self.unary());
+        loop {
+            let token_op = get_token_from_item!(self.first());
+            let op = match token_op.kind {
+                TokenKind::Star => BinOp::Mul,
+                TokenKind::Slash => BinOp::Div,
+                _ => break,
+            };
 
-      /// Handle `*` - multiply and `/` - divide operators
-      fn multiplicative(&mut self) -> ExprItem {
-      let mut left = get_expr_from_item!(self.unary());
-      loop {
-      let token_op = get_token_from_item!(self.first());
-      let op = match token_op.kind {
-      TokenKind::Star => BinOp::Mul,
-      TokenKind::Slash => BinOp::Div,
-      _ => break,
-      };
+            let _ = self.advance();
+            let start = self.stream.pos;
+            let right = get_expr_from_item!(self.unary());
 
-      let _ = self.advance();
-      let start = self.stream.pos;
-      let right = get_expr_from_item!(self.unary());
+            left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
+        }
+        return Some(Ok(left));
+    }
 
-      left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
-      }
-      return Some(Ok(left));
-      }
+    /// Handle unary operators
+    /// Supported operators: `!` - not, `-` - negative
+    fn unary(&mut self) -> ExprItem {
+        let token = get_token_from_item!(self.first());
+        let start = self.stream.pos;
+        match token.kind {
+            TokenKind::Bang => {
+                let _bang = self.advance()?;
+                let expr = get_expr_from_item!(self.postfix());
 
-      /// Handle unary operators
-      /// Supported operators: `!` - not, `-` - negative
-      fn unary(&mut self) -> ExprItem {
-      let token = get_token_from_item!(self.first());
-      let start = self.stream.pos;
-      match token.kind {
-      TokenKind::Bang => {
-      let _bang = self.advance()?;
-      let expr = get_expr_from_item!(self.postfix());
+                Some(Ok(expr!(
+                    ExprKind::Unary(UnOp::Not, expr),
+                    span!(start, self.stream.pos - start)
+                )))
+            }
+            TokenKind::Minus => {
+                let _minus = self.advance()?;
+                let expr = get_expr_from_item!(self.postfix());
 
-      Some(Ok(expr!(
-      ExprKind::Unary(UnOp::Not, expr),
-      span!(start, self.stream.pos - start)
-      )))
-      }
-      TokenKind::Minus => {
-      let _minus = self.advance()?;
-      let expr = get_expr_from_item!(self.postfix());
+                Some(Ok(expr!(
+                    ExprKind::Unary(UnOp::Neg, expr),
+                    span!(start, self.stream.pos - start)
+                )))
+            }
+            _ => self.postfix(),
+        }
+    }
 
-      Some(Ok(expr!(
-      ExprKind::Unary(UnOp::Neg, expr),
-      span!(start, self.stream.pos - start)
-      )))
-      }
-      _ => self.postfix(),
-      }
-      }
-
-      /// Handle posifix operators
-      /// Supported operators: `!?` - unwrap
-      fn postfix(&mut self) -> ExprItem {
-      let expr_item = self.primary();
-      let start = self.stream.pos;
-      match get_token_from_item!(self.first()).kind {
-      TokenKind::Unwrap => {
-      let _unwrap = self.advance()?;
-      Some(Ok(expr!(
-      ExprKind::Unwrap(get_expr_from_item!(expr_item)),
-      span!(start, self.stream.pos - start)
-      )))
-      }
-      _ => expr_item,
-      }
-      }*/
+    /// Handle posifix operators
+    /// Supported operators: `!?` - unwrap
+    pub(crate) fn postfix(&mut self) -> ExprItem {
+        let expr_item = self.primary();
+        let start = self.stream.pos;
+        match get_token_from_item!(self.first()).kind {
+            TokenKind::Unwrap => {
+                let _unwrap = self.advance()?;
+                Some(Ok(expr!(
+                    ExprKind::Unwrap(get_expr_from_item!(expr_item)),
+                    span!(start, self.stream.pos - start)
+                )))
+            }
+            _ => expr_item,
+        }
+    }
 
     /// Parse source value
     pub(crate) fn primary(&mut self) -> ExprItem {
+        self.skip_whitespaces();
         let token = get_expr_from_item!(self.first());
 
         match token.kind {
@@ -340,15 +347,13 @@ impl<'a> AstCursor<'a> {
             ))),
         }
     }
-
-    fn advance_get_word(&mut self, token: Token) -> (u32, String) {
-        let pos = self.stream.pos;
-        let _ = self.advance();
-        let s = self.source.get_word(pos, token.len);
-        (pos, s)
-    }
 }
 
+// Help functions for translate text to required type
+
+/// Transform integer loteral from text
+/// Return expression if successful
+/// Return diagnostic if failed
 fn word_to_int(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
     match s.parse::<i64>() {
         Ok(num) => Ok(expr!(ExprKind::Int(num), span!(pos, token.len))),
@@ -359,7 +364,9 @@ fn word_to_int(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
         )),
     }
 }
-
+/// Transform float literal from text
+/// Return expression if successful
+/// Return diagnostic if failed
 fn word_to_float(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
     match s.parse::<f64>() {
         Ok(num) => Ok(expr!(ExprKind::Float(num), span!(pos, token.len))),
@@ -371,46 +378,43 @@ fn word_to_float(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
     }
 }
 
+/// Transform escape symbol to non-escape char
 fn escape_symbol(s: &str, pos: u32, len: u32) -> Result<char, Diagnostic> {
     Ok(match s {
-        "t" => '\t',
-        "r" => '\r',
-        "0" => '\0',
-        "\\" => '\\',
-        "\'" => '\'',
-        "\"" => '\"',
+        "\\t" => '\t',
+        "\\r" => '\r',
+        "\\0" => '\0',
+        "\\\\" => '\\',
+        "\\\'" => '\'',
+        "\\\"" => '\"',
         // TODO: add handle for ANSII escapes
         _ => return Err(diag!("E0010", span!(pos, len), "Unknown escape sequence")),
     })
 }
 
+/// Transform char literal from text
+/// Return expression if successful
+/// Return diagnostic if failed
 fn word_to_char(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
-    // cute `'` symbols
-    let c = &s[1..token.len as usize - 1];
-    if token.len >= 4 {
-        // >= 4 because `'\t'`, ANSII have greater of 1 symbols
-        // Handle escape sequence
-
-        let escape = &c[1..c.len()];
-        let escape = escape_symbol(escape, pos, token.len)?;
+    let inner = &s[1..token.len as usize - 1];
+    if inner.len() >= 2 {
+        let escape = escape_symbol(inner, pos, token.len)?;
         return Ok(expr!(ExprKind::Char(escape), span!(pos, token.len)));
     }
-    match c.parse::<char>() {
-        Ok(c) => Ok(expr!(ExprKind::Char(c), span!(pos, token.len))),
-        Err(err) => Err(diag!(
+    match inner.chars().next() {
+        Some(c) => Ok(expr!(ExprKind::Char(c), span!(pos, token.len))),
+        None => Err(diag!(
             "E0009",
             span!(pos, token.len),
-            "Failed to get char from source: {err}"
+            "Empty character literal"
         )),
     }
 }
 
-pub(crate) fn word_to_string(
-    s: &str,
-    token: Token,
-    pos: u32,
-    pref: StrPrefix,
-) -> Result<Expr, Diagnostic> {
+/// Transform string literal from text
+/// Return expression if successful
+/// Return diagnostic if failed
+fn word_to_string(s: &str, token: Token, pos: u32, pref: StrPrefix) -> Result<Expr, Diagnostic> {
     let start = match pref {
         StrPrefix::Format | StrPrefix::Raw => 2,
         StrPrefix::No => 1,

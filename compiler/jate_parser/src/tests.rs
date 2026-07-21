@@ -12,7 +12,7 @@ macro_rules! vec_str {
 
 #[test]
 fn test_parser_primary() {
-    let input = "123 ident::some true 3.14 'c' '\\t'";
+    let input = "123 ident::some true 3.14 'c' '\\t' (2)";
     println!("\x1b[32mSource:\x1b[0m {input}");
     let source = SourceFile::new("main.jate".into(), input.into());
     let lx = tokenize(input);
@@ -21,14 +21,23 @@ fn test_parser_primary() {
         stream: ts,
         source: &source,
     };
-    let mut i = 0;
     let mut exprs = vec![];
-    loop {
+    let expected = vec![
+        expr!(Int(123), span!(0, 3)),
+        expr!(Ident(vec_str!("ident", "some")), span!(4, 11)),
+        expr!(Bool(true), span!(16, 4)),
+        expr!(Float(3.14), span!(21, 4)),
+        expr!(Char('c'), span!(26, 3)),
+        expr!(Char('\t'), span!(30, 4)),
+        expr!(Int(2), span!(36, 1)),
+    ];
+    for i in 0..expected.len() {
         match parsed.primary() {
             Some(res) => match res {
                 Ok(expr) => {
                     exprs.push(expr.clone());
                     println!("\x1b[32m{i}.\x1b[0m {}", expr);
+                    assert_eq!(expr, expected[i]);
                 }
                 Err(err) => {
                     eprintln!("\x1b[34m{i}.\x1b[0m {:?}", err);
@@ -36,23 +45,7 @@ fn test_parser_primary() {
             },
             None => break,
         }
-        i += 1;
-        // Border for number of iterations
-        if i > 110 {
-            break;
-        }
     }
-    let expected = vec![
-        expr!(Int(123), span!(0, 3)),
-        expr!(
-            Ident(vec!["ident".to_string(), "some".to_string()]),
-            span!(4, 11)
-        ),
-        expr!(Bool(true), span!(16, 4)),
-        expr!(Float(3.14), span!(21, 4)),
-        expr!(Char('c'), span!(27, 3)),
-        expr!(Char('\t'), span!(32, 4)),
-    ];
     assert_eq!(exprs, expected);
 }
 
