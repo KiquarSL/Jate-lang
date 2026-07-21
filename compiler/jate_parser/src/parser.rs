@@ -271,27 +271,27 @@ impl<'a> AstCursor<'a> {
     /// Parse source value
     pub(crate) fn primary(&mut self) -> ExprItem {
         let token = get_expr_from_item!(self.first());
-        let pos = self.stream.current_pos(token.len);
-        let s = self.source.get_word(pos, token.len);
 
         match token.kind {
             TokenKind::Literal(LiteralKind::Int) => {
-                let _ = self.advance()?;
+                let (pos, s) = self.advance_get_word(token);
                 Some(word_to_int(&s, token, pos))
             }
             TokenKind::Literal(LiteralKind::Float) => {
-                let _ = self.advance()?;
+                let (pos, s) = self.advance_get_word(token);
                 Some(word_to_float(&s, token, pos))
             }
             TokenKind::Literal(LiteralKind::Char) => {
-                let _ = self.advance()?;
+                let (pos, s) = self.advance_get_word(token);
                 Some(word_to_char(&s, token, pos))
             }
             TokenKind::Literal(LiteralKind::String(prefix)) => {
-                let _ = self.advance()?;
+                let (pos, s) = self.advance_get_word(token);
                 Some(word_to_string(&s, token, pos, prefix))
             }
             TokenKind::Ident => {
+                let pos = token.len; // using because not called `advance` before
+                let s = self.source.get_word(pos, token.len);
                 let span = span!(pos, token.len);
                 Some(match s.as_str() {
                     "true" => {
@@ -311,6 +311,7 @@ impl<'a> AstCursor<'a> {
             }
             TokenKind::LParen => {
                 let _ = self.advance()?;
+                let pos = self.stream.current_pos(token.len);
                 let expr = self.expr();
                 let token = get_expr_from_item!(self.advance());
                 match token.kind {
@@ -340,6 +341,13 @@ impl<'a> AstCursor<'a> {
                 token
             ))),
         }
+    }
+
+    fn advance_get_word(&mut self, token: Token) -> (u32, String) {
+        let _ = self.advance();
+        let pos = self.stream.current_pos(token.len);
+        let s = self.source.get_word(pos, token.len);
+        (pos, s)
     }
 }
 

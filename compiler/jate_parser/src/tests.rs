@@ -29,6 +29,9 @@ fn parse_test(input: &'static str) -> Vec<Expr> {
             None => break,
         }
         i += 1;
+        if i > 110 {
+            break;
+        }
     }
     exprs
 }
@@ -38,27 +41,27 @@ fn test_all_single_expressions() {
     let input = "3.4 a::b::c someNullable!? \"some text\" 1234 'c' !true '\\t'";
     let exprs = parse_test(input);
     let expected = vec![
-        // -3.4
-        expr!(ExprKind::Float(3.4), span!(1, 3)),
+        // 3.4
+        expr!(ExprKind::Float(3.4), span!(0, 3)),
         // a::b::c
         expr!(
             ExprKind::Ident(vec!["a".to_string(), "b".to_string(), "c".to_string()]),
-            span!(5, 7)
+            span!(4, 7)
         ),
         // someNullable!?
         expr!(
             ExprKind::Unwrap(expr!(
                 ExprKind::Ident(vec!["someNullable".to_string()]),
-                span!(13, 12)
+                span!(12, 12)
             )),
-            span!(13, 14)
+            span!(12, 14)
         ),
         // "some text"
-        expr!(ExprKind::String("some text".to_string()), span!(28, 11)),
+        expr!(ExprKind::String("some text".to_string()), span!(27, 11)),
         // 1234
-        expr!(ExprKind::Int(1234), span!(40, 4)),
+        expr!(ExprKind::Int(1234), span!(39, 4)),
         // 'c'
-        expr!(ExprKind::Char('c'), span!(45, 3)),
+        expr!(ExprKind::Char('c'), span!(44, 3)),
         // !true
         expr!(
             ExprKind::Unary(UnOp::Not, expr!(ExprKind::Bool(true), span!(49, 4))),
