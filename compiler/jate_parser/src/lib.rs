@@ -7,4 +7,5 @@ mod tests;
 pub use parser::{StmtItem, parse};
 pub use token_stream::{TokenItem, TokenStream};
 
-pub(crate) use parser::AstCursor;
+#[allow(unused_imports)]
+pub(crate) use {parser::AstCursor, parser::word_to_string};

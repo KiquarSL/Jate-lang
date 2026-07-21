@@ -414,12 +414,17 @@ fn word_to_char(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
 /// Transform string literal from text
 /// Return expression if successful
 /// Return diagnostic if failed
-fn word_to_string(s: &str, token: Token, pos: u32, pref: StrPrefix) -> Result<Expr, Diagnostic> {
+pub(crate) fn word_to_string(
+    s: &str,
+    token: Token,
+    pos: u32,
+    pref: StrPrefix,
+) -> Result<Expr, Diagnostic> {
     let start = match pref {
         StrPrefix::Format | StrPrefix::Raw => 2,
         StrPrefix::No => 1,
     };
-    let end = start + token.len as usize - 2;
+    let end = token.len as usize - 1;
     let s = &s[start..end];
     Ok(expr!(ExprKind::String(s.into()), span!(pos, token.len)))
 }

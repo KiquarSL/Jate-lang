@@ -1,7 +1,8 @@
-use crate::{AstCursor, TokenStream};
-use jate_ast::{BinOp, Expr, ExprKind::*, UnOp, expr};
+use super::*;
+use jate_ast::ExprKind::*;
+use jate_ast::*;
 use jate_error::*;
-use jate_lexer::tokenize;
+use jate_lexer::*;
 use jate_session::SourceFile;
 
 macro_rules! vec_str {
@@ -47,6 +48,18 @@ fn test_parser_primary() {
         }
     }
     assert_eq!(exprs, expected);
+}
+
+#[test]
+fn test_word_to_string() {
+    let pref = StrPrefix::Format;
+    let token = Token::new(TokenKind::Literal(LiteralKind::String(pref)), 7);
+    let source = "f\"text\"";
+    let extracted = word_to_string(source, token, 0, pref);
+    assert_eq!(
+        extracted,
+        Ok(expr!(ExprKind::String("text".to_string()), span!(0, 7)))
+    );
 }
 
 /*#[test]
