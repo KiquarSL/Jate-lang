@@ -29,8 +29,16 @@ impl TokenStream {
     pub fn advance(&mut self) -> TokenItem {
         let current = self.first();
         if let Some(token) = self.stream.next() {
+            match &self.next_token {
+                Some(Some(Ok(token))) => {
+                    self.pos += token.len;
+                }
+                Some(Some(Err(err))) => {
+                    self.pos += err.span.len;
+                }
+                None | Some(None) => {}
+            }
             self.next_token = Some(Some(self.check(token)));
-            self.pos += token.len;
             return current;
         } else {
             self.next_token = None;
@@ -43,12 +51,6 @@ impl TokenStream {
             Some(item) => item.clone(),
             None => None,
         }
-    }
-
-    /// Using in parser for eval positon of current token
-    /// Using after advance!
-    pub fn current_pos(&self, len: u32) -> u32 {
-        self.pos - len
     }
 
     /// Check token

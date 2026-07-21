@@ -1,6 +1,6 @@
 use crate::{TokenItem, TokenStream};
-use jate_ast::{BinOp, Expr, ExprKind, Stmt, UnOp, expr, stmt};
-use jate_error::{Diagnostic, diag, span};
+use jate_ast::{expr, stmt, BinOp, Expr, ExprKind, Stmt, UnOp};
+use jate_error::{diag, span, Diagnostic};
 use jate_lexer::{LiteralKind, StrPrefix, Token, TokenKind};
 use jate_session::SourceFile;
 
@@ -65,10 +65,7 @@ impl<'a> AstCursor<'a> {
             match token_res {
                 Ok(token) => {
                     if token.kind == TokenKind::Ident {
-                        let ident = self
-                            .source
-                            .get_word(self.stream.current_pos(token.len), token.len)
-                            .to_string();
+                        let ident = self.source.get_word(self.stream.pos, token.len).to_string();
                         path.push(ident);
                         self.advance();
                         match self.first() {
@@ -128,145 +125,146 @@ impl<'a> AstCursor<'a> {
 /// Block methods for expressions
 impl<'a> AstCursor<'a> {
     fn expr(&mut self) -> ExprItem {
-        return self.logical();
-    }
+        todo!(); // return self.logical();
+    } /*
 
-    /// Handle logical operators
-    /// `&&` - And
-    /// `||` - Or
-    fn logical(&mut self) -> ExprItem {
-        let mut left = get_expr_from_item!(self.comparison());
-        loop {
-            let token_op = get_token_from_item!(self.first());
-            let op = match token_op.kind {
-                TokenKind::And => BinOp::And,
-                TokenKind::Or => BinOp::Or,
-                _ => break,
-            };
 
-            let _ = self.advance();
-            let start = self.stream.current_pos(token_op.len);
-            let right = get_expr_from_item!(self.comparison());
+      /// Handle logical operators
+      /// `&&` - And
+      /// `||` - Or
+      fn logical(&mut self) -> ExprItem {
+      let mut left = get_expr_from_item!(self.comparison());
+      loop {
+      let token_op = get_token_from_item!(self.first());
+      let op = match token_op.kind {
+      TokenKind::And => BinOp::And,
+      TokenKind::Or => BinOp::Or,
+      _ => break,
+      };
 
-            left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
-        }
-        return Some(Ok(left));
-    }
+      let _ = self.advance();
+      let start = self.stream.pos;
+      let right = get_expr_from_item!(self.comparison());
 
-    /// Handle comparison operators
-    /// `>` - Greater
-    /// `>=` - Greater equal
-    /// `<` - Less
-    /// `<=` - Less equal
-    /// `==` - Equals
-    /// `!=` - Not equals
-    fn comparison(&mut self) -> ExprItem {
-        let mut left = get_expr_from_item!(self.additive());
-        loop {
-            let token_op = get_token_from_item!(self.first());
-            let op = match token_op.kind {
-                TokenKind::Gt => BinOp::Gt,
-                TokenKind::Ge => BinOp::Ge,
-                TokenKind::Lt => BinOp::Lt,
-                TokenKind::Le => BinOp::Le,
-                TokenKind::Eq => BinOp::Eq,
-                TokenKind::Ne => BinOp::Ne,
-                _ => break,
-            };
+      left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
+      }
+      return Some(Ok(left));
+      }
 
-            let _ = self.advance();
-            let start = self.stream.current_pos(token_op.len);
-            let right = get_expr_from_item!(self.additive());
+      /// Handle comparison operators
+      /// `>` - Greater
+      /// `>=` - Greater equal
+      /// `<` - Less
+      /// `<=` - Less equal
+      /// `==` - Equals
+      /// `!=` - Not equals
+      fn comparison(&mut self) -> ExprItem {
+      let mut left = get_expr_from_item!(self.additive());
+      loop {
+      let token_op = get_token_from_item!(self.first());
+      let op = match token_op.kind {
+      TokenKind::Gt => BinOp::Gt,
+      TokenKind::Ge => BinOp::Ge,
+      TokenKind::Lt => BinOp::Lt,
+      TokenKind::Le => BinOp::Le,
+      TokenKind::Eq => BinOp::Eq,
+      TokenKind::Ne => BinOp::Ne,
+      _ => break,
+      };
 
-            left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
-        }
-        return Some(Ok(left));
-    }
+      let _ = self.advance();
+      let start = self.stream.pos;
+      let right = get_expr_from_item!(self.additive());
 
-    /// Handle `+` - add and `-` - subtract operators
-    fn additive(&mut self) -> ExprItem {
-        let mut left = get_expr_from_item!(self.multiplicative());
-        loop {
-            let token_op = get_token_from_item!(self.first());
-            let op = match token_op.kind {
-                TokenKind::Plus => BinOp::Add,
-                TokenKind::Minus => BinOp::Sub,
-                _ => break,
-            };
+      left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
+      }
+      return Some(Ok(left));
+      }
 
-            let _ = self.advance();
-            let start = self.stream.current_pos(token_op.len);
-            let right = get_expr_from_item!(self.multiplicative());
+      /// Handle `+` - add and `-` - subtract operators
+      fn additive(&mut self) -> ExprItem {
+      let mut left = get_expr_from_item!(self.multiplicative());
+      loop {
+      let token_op = get_token_from_item!(self.first());
+      let op = match token_op.kind {
+      TokenKind::Plus => BinOp::Add,
+      TokenKind::Minus => BinOp::Sub,
+      _ => break,
+      };
 
-            left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
-        }
-        return Some(Ok(left));
-    }
+      let _ = self.advance();
+      let start = self.stream.pos;
+      let right = get_expr_from_item!(self.multiplicative());
 
-    /// Handle `*` - multiply and `/` - divide operators
-    fn multiplicative(&mut self) -> ExprItem {
-        let mut left = get_expr_from_item!(self.unary());
-        loop {
-            let token_op = get_token_from_item!(self.first());
-            let op = match token_op.kind {
-                TokenKind::Star => BinOp::Mul,
-                TokenKind::Slash => BinOp::Div,
-                _ => break,
-            };
+      left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
+      }
+      return Some(Ok(left));
+      }
 
-            let _ = self.advance();
-            let start = self.stream.current_pos(token_op.len);
-            let right = get_expr_from_item!(self.unary());
+      /// Handle `*` - multiply and `/` - divide operators
+      fn multiplicative(&mut self) -> ExprItem {
+      let mut left = get_expr_from_item!(self.unary());
+      loop {
+      let token_op = get_token_from_item!(self.first());
+      let op = match token_op.kind {
+      TokenKind::Star => BinOp::Mul,
+      TokenKind::Slash => BinOp::Div,
+      _ => break,
+      };
 
-            left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
-        }
-        return Some(Ok(left));
-    }
+      let _ = self.advance();
+      let start = self.stream.pos;
+      let right = get_expr_from_item!(self.unary());
 
-    /// Handle unary operators
-    /// Supported operators: `!` - not, `-` - negative
-    fn unary(&mut self) -> ExprItem {
-        let token = get_token_from_item!(self.first());
-        let start = self.stream.pos;
-        match token.kind {
-            TokenKind::Bang => {
-                let _bang = self.advance()?;
-                let expr = get_expr_from_item!(self.postfix());
+      left = expr!(ExprKind::Bin(left, op, right), span!(start, token_op.len));
+      }
+      return Some(Ok(left));
+      }
 
-                Some(Ok(expr!(
-                    ExprKind::Unary(UnOp::Not, expr),
-                    span!(start, self.stream.pos - start)
-                )))
-            }
-            TokenKind::Minus => {
-                let _minus = self.advance()?;
-                let expr = get_expr_from_item!(self.postfix());
+      /// Handle unary operators
+      /// Supported operators: `!` - not, `-` - negative
+      fn unary(&mut self) -> ExprItem {
+      let token = get_token_from_item!(self.first());
+      let start = self.stream.pos;
+      match token.kind {
+      TokenKind::Bang => {
+      let _bang = self.advance()?;
+      let expr = get_expr_from_item!(self.postfix());
 
-                Some(Ok(expr!(
-                    ExprKind::Unary(UnOp::Neg, expr),
-                    span!(start, self.stream.pos - start)
-                )))
-            }
-            _ => self.postfix(),
-        }
-    }
+      Some(Ok(expr!(
+      ExprKind::Unary(UnOp::Not, expr),
+      span!(start, self.stream.pos - start)
+      )))
+      }
+      TokenKind::Minus => {
+      let _minus = self.advance()?;
+      let expr = get_expr_from_item!(self.postfix());
 
-    /// Handle posifix operators
-    /// Supported operators: `!?` - unwrap
-    fn postfix(&mut self) -> ExprItem {
-        let expr_item = self.primary();
-        let start = self.stream.pos;
-        match get_token_from_item!(self.first()).kind {
-            TokenKind::Unwrap => {
-                let _unwrap = self.advance()?;
-                Some(Ok(expr!(
-                    ExprKind::Unwrap(get_expr_from_item!(expr_item)),
-                    span!(start, self.stream.pos - start)
-                )))
-            }
-            _ => expr_item,
-        }
-    }
+      Some(Ok(expr!(
+      ExprKind::Unary(UnOp::Neg, expr),
+      span!(start, self.stream.pos - start)
+      )))
+      }
+      _ => self.postfix(),
+      }
+      }
+
+      /// Handle posifix operators
+      /// Supported operators: `!?` - unwrap
+      fn postfix(&mut self) -> ExprItem {
+      let expr_item = self.primary();
+      let start = self.stream.pos;
+      match get_token_from_item!(self.first()).kind {
+      TokenKind::Unwrap => {
+      let _unwrap = self.advance()?;
+      Some(Ok(expr!(
+      ExprKind::Unwrap(get_expr_from_item!(expr_item)),
+      span!(start, self.stream.pos - start)
+      )))
+      }
+      _ => expr_item,
+      }
+      }*/
 
     /// Parse source value
     pub(crate) fn primary(&mut self) -> ExprItem {
@@ -290,7 +288,7 @@ impl<'a> AstCursor<'a> {
                 Some(word_to_string(&s, token, pos, prefix))
             }
             TokenKind::Ident => {
-                let pos = token.len; // using because not called `advance` before
+                let pos = self.stream.pos;
                 let s = self.source.get_word(pos, token.len);
                 let span = span!(pos, token.len);
                 Some(match s.as_str() {
@@ -311,7 +309,7 @@ impl<'a> AstCursor<'a> {
             }
             TokenKind::LParen => {
                 let _ = self.advance()?;
-                let pos = self.stream.current_pos(token.len);
+                let pos = self.stream.pos;
                 let expr = self.expr();
                 let token = get_expr_from_item!(self.advance());
                 match token.kind {
@@ -345,7 +343,7 @@ impl<'a> AstCursor<'a> {
 
     fn advance_get_word(&mut self, token: Token) -> (u32, String) {
         let _ = self.advance();
-        let pos = self.stream.current_pos(token.len);
+        let pos = self.stream.pos;
         let s = self.source.get_word(pos, token.len);
         (pos, s)
     }
