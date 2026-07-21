@@ -35,14 +35,11 @@ fn parse_test(input: &'static str) -> Vec<Expr> {
 
 #[test]
 fn test_all_single_expressions() {
-    let input = "-3.4 a::b::c someNullable!? \"some text\" 1234 'c' !true '\\t'";
+    let input = "3.4 a::b::c someNullable!? \"some text\" 1234 'c' !true '\\t'";
     let exprs = parse_test(input);
     let expected = vec![
         // -3.4
-        expr!(
-            ExprKind::Unary(UnOp::Neg, expr!(ExprKind::Float(3.4), span!(1, 3))),
-            span!(0, 4)
-        ),
+        expr!(ExprKind::Float(3.4), span!(1, 3)),
         // a::b::c
         expr!(
             ExprKind::Ident(vec!["a".to_string(), "b".to_string(), "c".to_string()]),

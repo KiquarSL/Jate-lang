@@ -9,7 +9,8 @@ members = [
     "compiler/jate_lexer", 
     "compiler/jate_session", 
     "compiler/jate_error", 
-    "compiler/jate_error_codes", "compiler/jate_driver",
+    "compiler/jate_error_codes", 
+    "compiler/jate_driver",
 ]
 
 [workspace.dependencies]

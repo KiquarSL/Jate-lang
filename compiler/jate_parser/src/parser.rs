@@ -1,6 +1,6 @@
 use crate::{TokenItem, TokenStream};
-use jate_ast::{expr, stmt, BinOp, Expr, ExprKind, Stmt, UnOp};
-use jate_error::{diag, span, Diagnostic};
+use jate_ast::{BinOp, Expr, ExprKind, Stmt, UnOp, expr, stmt};
+use jate_error::{Diagnostic, diag, span};
 use jate_lexer::{LiteralKind, StrPrefix, Token, TokenKind};
 use jate_session::SourceFile;
 
@@ -28,7 +28,7 @@ macro_rules! get_token_from_item {
     };
 }
 
-/// Result wrapper for get statement when successful parse and return vector of diagnostics when errors
+/// Result wrapper for get statement/expression when successful parse and return vector of diagnostics when errors
 pub type StmtItem = Option<Result<Stmt, Vec<Diagnostic>>>;
 pub type ExprItem = Option<Result<Expr, Diagnostic>>;
 
@@ -271,7 +271,6 @@ impl<'a> AstCursor<'a> {
     /// Parse source value
     pub(crate) fn primary(&mut self) -> ExprItem {
         let token = get_expr_from_item!(self.first());
-
         let pos = self.stream.current_pos(token.len);
         let s = self.source.get_word(pos, token.len);
 
