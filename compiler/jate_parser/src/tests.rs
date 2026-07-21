@@ -60,6 +60,15 @@ fn test_word_to_string() {
         extracted,
         Ok(expr!(ExprKind::String("text".to_string()), span!(0, 7)))
     );
+
+    let pref = StrPrefix::No;
+    let token = Token::new(TokenKind::Literal(LiteralKind::String(pref)), 6);
+    let source = "\"some\"";
+    let extracted = word_to_string(source, token, 0, pref);
+    assert_eq!(
+        extracted,
+        Ok(expr!(ExprKind::String("some".to_string()), span!(0, 6)))
+    );
 }
 
 /*#[test]
