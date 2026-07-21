@@ -113,3 +113,55 @@ fn test_word_to_char_escape() {
 
     assert_eq!(result, Ok(expr!(ExprKind::Char('\t'), span!(0, 4))));
 }
+
+#[test]
+fn test_word_to_int() {
+    let source = "123";
+    let token = Token::new(TokenKind::Literal(LiteralKind::Int), 3);
+    let result = word_to_int(source, token, 0);
+    assert_eq!(result, Ok(expr!(ExprKind::Int(123), span!(0, 3))));
+
+    let source = "abc";
+    let token = Token::new(TokenKind::Literal(LiteralKind::Int), 3);
+    let result = word_to_int(source, token, 0);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_word_to_float() {
+    let source = "3.14";
+    let token = Token::new(TokenKind::Literal(LiteralKind::Float), 4);
+    let result = word_to_float(source, token, 0);
+    assert_eq!(result, Ok(expr!(ExprKind::Float(3.14), span!(0, 4))));
+
+    let source = "abc";
+    let token = Token::new(TokenKind::Literal(LiteralKind::Float), 3);
+    let result = word_to_float(source, token, 0);
+    assert!(result.is_err());
+}
+#[test]
+fn test_escape_symbol() {
+    let result = escape_symbol("\\t", 0, 2);
+    assert_eq!(result, Ok('\t'));
+
+    let result = escape_symbol("\\n", 0, 2);
+    assert_eq!(result, Ok('\n'));
+
+    let result = escape_symbol("\\r", 0, 2);
+    assert_eq!(result, Ok('\r'));
+
+    let result = escape_symbol("\\0", 0, 2);
+    assert_eq!(result, Ok('\0'));
+
+    let result = escape_symbol("\\\\", 0, 2);
+    assert_eq!(result, Ok('\\'));
+
+    let result = escape_symbol("\\'", 0, 2);
+    assert_eq!(result, Ok('\''));
+
+    let result = escape_symbol("\\\"", 0, 2);
+    assert_eq!(result, Ok('\"'));
+
+    let result = escape_symbol("\\x", 0, 2);
+    assert!(result.is_err());
+}

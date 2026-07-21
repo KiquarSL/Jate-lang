@@ -354,7 +354,7 @@ impl<'a> AstCursor<'a> {
 /// Transform integer loteral from text
 /// Return expression if successful
 /// Return diagnostic if failed
-fn word_to_int(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
+pub(crate) fn word_to_int(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
     match s.parse::<i64>() {
         Ok(num) => Ok(expr!(ExprKind::Int(num), span!(pos, token.len))),
         Err(err) => Err(diag!(
@@ -367,7 +367,7 @@ fn word_to_int(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
 /// Transform float literal from text
 /// Return expression if successful
 /// Return diagnostic if failed
-fn word_to_float(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
+pub(crate) fn word_to_float(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
     match s.parse::<f64>() {
         Ok(num) => Ok(expr!(ExprKind::Float(num), span!(pos, token.len))),
         Err(err) => Err(diag!(
@@ -379,9 +379,10 @@ fn word_to_float(s: &str, token: Token, pos: u32) -> Result<Expr, Diagnostic> {
 }
 
 /// Transform escape symbol to non-escape char
-fn escape_symbol(s: &str, pos: u32, len: u32) -> Result<char, Diagnostic> {
+pub(crate) fn escape_symbol(s: &str, pos: u32, len: u32) -> Result<char, Diagnostic> {
     Ok(match s {
         "\\t" => '\t',
+		"\\n" => '\n',
         "\\r" => '\r',
         "\\0" => '\0',
         "\\\\" => '\\',
